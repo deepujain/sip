@@ -177,7 +177,7 @@ final class MotionSensors {
     }
 
     /// Which way the sensor's x axis points relative to the screen.
-    private static let direction = 1.0
+    private static let direction = -1.0
 
     private func receive(_ sample: (Double, Double, Double)) {
         // At 100 readings a second: gravity settles in about 60 ms, the raw reading in about 15 ms.
