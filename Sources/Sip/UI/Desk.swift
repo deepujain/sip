@@ -69,7 +69,11 @@ struct DeskView: View {
     let model: WaterModel
     /// Called while the bottle is dragged (`false`) and when it's let go (`true`).
     var onDrag: (Bool) -> Void = { _ in }
+    var sideRoom: CGFloat = 0
     static let size = CGSize(width: 200, height: 236)
+    /// Clear room on both sides of the panel, so a bottle lying on its side isn't cut off.
+    static let margin: CGFloat = 130
+    static var panelSize: CGSize { CGSize(width: size.width + margin * 2, height: size.height) }
 
     private var late: Bool { model.phase == .due || model.phase == .overdue }
     /// A finished bottle's message shows for a moment even without hovering.
@@ -108,6 +112,7 @@ struct DeskView: View {
         .animation(.spring(duration: 0.45, bounce: 0.2), value: collapsed)
         .padding(.horizontal, 4)
         .frame(width: Self.size.width, height: Self.size.height, alignment: model.deskOnLeft ? .bottomLeading : .bottomTrailing)
+        .padding(.horizontal, sideRoom)
     }
 
     private var bottle: some View {
@@ -116,7 +121,8 @@ struct DeskView: View {
                     .animation(.spring(duration: 0.9, bounce: 0.25), value: model.deskLevel)
                     .frame(height: 124)
                     .shadow(color: .black.opacity(0.12), radius: 3, y: 2)
-                    .rotationEffect(.radians(-Slosh.shared.lean), anchor: .bottom)
+                    // A real bottle tips over its lower bottom edge.
+                    .rotationEffect(.radians(-Slosh.shared.lean), anchor: UnitPoint(x: Slosh.shared.lean >= 0 ? 0.1 : 0.9, y: 1))
                     .scaleEffect(model.deskHover ? 1.04 : 1, anchor: .bottom)
                     .contentShape(Rectangle())
                     .gesture(drag)
@@ -188,8 +194,11 @@ struct DeskView: View {
     /// Where the collapsed row sits in the panel, in window coordinates, so only it wakes the bottle.
     static func collapsedRegion(bottles: Int, onLeft: Bool, withLine: Bool) -> NSRect {
         let width = withLine ? size.width : CGFloat(bottles) * 13 + 30
-        return NSRect(x: onLeft ? 0 : size.width - width, y: 0, width: width, height: withLine ? 56 : 32)
+        return NSRect(x: margin + (onLeft ? 0 : size.width - width), y: 0, width: width, height: withLine ? 56 : 32)
     }
+
+    /// The bottle and its caption, in window coordinates; the clear margins don't count as hovering.
+    static var contentRegion: NSRect { NSRect(x: margin, y: 0, width: size.width, height: size.height) }
 }
 
 @MainActor
@@ -206,11 +215,11 @@ final class DeskController {
         let host = FloatingHost(rootView: DeskView(model: model) { _ in })
         host.sizingOptions = []
         host.hoverRegion = { [weak model] in
-            guard let model, model.deskCollapsed else { return nil }
+            guard let model, model.deskCollapsed else { return DeskView.contentRegion }
             return DeskView.collapsedRegion(bottles: model.slots.count, onLeft: model.deskOnLeft, withLine: model.nudgeLine != nil)
         }
         host.onHover = { [weak self] inside in self?.hover(inside) }
-        host.rootView = DeskView(model: model) { [weak self] ended in self?.drag(ended: ended) }
+        host.rootView = DeskView(model: model, onDrag: { [weak self] ended in self?.drag(ended: ended) }, sideRoom: DeskView.margin)
         panel.contentView = host
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.layout() }
@@ -260,7 +269,8 @@ final class DeskController {
             panel.orderOut(nil)
             return
         }
-        panel.setFrame(NSRect(origin: clamp(savedOrigin ?? defaultOrigin(corner, on: screen)), size: DeskView.size), display: true)
+        let origin = clamp(savedOrigin ?? defaultOrigin(corner, on: screen))
+        panel.setFrame(NSRect(origin: CGPoint(x: origin.x - DeskView.margin, y: origin.y), size: DeskView.panelSize), display: true)
         updateSide()
         panel.orderFrontRegardless()
     }
@@ -300,8 +310,9 @@ final class DeskController {
         if ended {
             dragStart = nil
             lastDrag = nil
-            let origin = clamp(panel.frame.origin)
-            panel.setFrameOrigin(origin)
+            // Saved and clamped as the visible bottle's origin, inside the clear margins.
+            let origin = clamp(CGPoint(x: panel.frame.minX + DeskView.margin, y: panel.frame.minY))
+            panel.setFrameOrigin(CGPoint(x: origin.x - DeskView.margin, y: origin.y))
             UserDefaults.standard.set([Double(origin.x), Double(origin.y)], forKey: Prefs.deskOrigin)
             updateSide()
             return

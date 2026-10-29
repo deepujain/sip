@@ -22,6 +22,55 @@ struct BottleShape: Shape {
     }
 }
 
+/// Where the water sits inside the bottle's outline, treated as a polygon.
+enum WaterVolume {
+    static func polygon(of path: Path) -> [CGPoint] {
+        var points: [CGPoint] = []
+        path.cgPath.flattened(threshold: 0.5).applyWithBlock { element in
+            let kind = element.pointee.type
+            if kind == .moveToPoint || kind == .addLineToPoint { points.append(element.pointee.points[0]) }
+        }
+        return points
+    }
+
+    /// The part of the polygon at or beyond `offset` along the direction `normal`.
+    static func below(_ polygon: [CGPoint], along normal: CGPoint, from offset: CGFloat) -> [CGPoint] {
+        func depth(_ p: CGPoint) -> CGFloat { p.x * normal.x + p.y * normal.y - offset }
+        var result: [CGPoint] = []
+        for (index, current) in polygon.enumerated() {
+            let next = polygon[(index + 1) % polygon.count]
+            let a = depth(current), b = depth(next)
+            if a >= 0 { result.append(current) }
+            if (a >= 0) != (b >= 0) {
+                let t = a / (a - b)
+                result.append(CGPoint(x: current.x + (next.x - current.x) * t, y: current.y + (next.y - current.y) * t))
+            }
+        }
+        return result
+    }
+
+    static func area(_ polygon: [CGPoint]) -> CGFloat {
+        guard polygon.count > 2 else { return 0 }
+        var sum: CGFloat = 0
+        for (index, p) in polygon.enumerated() {
+            let q = polygon[(index + 1) % polygon.count]
+            sum += p.x * q.y - q.x * p.y
+        }
+        return abs(sum) / 2
+    }
+
+    /// How far along `normal` the waterline sits so that `area` of water lies beyond it.
+    static func waterline(_ polygon: [CGPoint], along normal: CGPoint, area target: CGFloat) -> CGFloat {
+        let depths = polygon.map { $0.x * normal.x + $0.y * normal.y }
+        var low = depths.min() ?? 0, high = depths.max() ?? 0
+        for _ in 0..<22 {
+            let middle = (low + high) / 2
+            if area(below(polygon, along: normal, from: middle)) > target { low = middle } else { high = middle }
+        }
+        return (low + high) / 2
+    }
+}
+
 /// A bottle with water up to `level` (0 empty, 1 full), drawn in one pass so it looks the same everywhere.
 struct BottleView: View, Animatable {
     var level: Double
@@ -52,9 +101,17 @@ struct BottleView: View, Animatable {
                 canvas(phase: 0.8, tilt: 0, agitation: 0)
             }
         }
+        .background { if sloshes { refraction } }
         .aspectRatio(Self.aspect, contentMode: .fit)
         .accessibilityElement()
         .accessibilityLabel(Text("Bottle \(Int((level * 100).rounded())) percent full"))
+    }
+
+    /// Clear Liquid Glass in the bottle's shape bends whatever sits behind the bottle on screen.
+    @ViewBuilder private var refraction: some View {
+        if #available(macOS 26, *) {
+            Color.clear.glassEffect(.clear, in: BottleShape())
+        }
     }
 
     private func canvas(phase: Double, tilt: Double, agitation: Double) -> some View {
@@ -84,38 +141,42 @@ struct BottleView: View, Animatable {
         if fill > 0.002 {
             var water = context
             water.clip(to: outline)
-            let top = height * (0.965 - CGFloat(fill) * 0.745)
+            // The surface stays flat at any angle, even with the bottle on its side, and holds the same
+            // amount of water: find where the waterline sits so the area under it matches the level.
+            let tangent = CGPoint(x: cos(tilt), y: sin(tilt))
+            let down = CGPoint(x: -tangent.y, y: tangent.x)
+            let glass = WaterVolume.polygon(of: outline)
+            let capacity = WaterVolume.area(WaterVolume.below(glass, along: CGPoint(x: 0, y: 1), from: height * 0.22))
+            let depth = WaterVolume.waterline(glass, along: down, area: capacity * CGFloat(fill))
+            let center = CGPoint(x: down.x * depth, y: down.y * depth)
+            let span = max(width, height) * 1.5
             let calm = height * 0.012 * CGFloat(min(1, fill * 8))
             let choppy = calm * CGFloat(agitation) * 2.5
-            let slope = CGFloat(tan(tilt))
             // Fixed wave speeds: changing a speed mid-flight would make the wave jump.
-            func surfaceY(_ step: CGFloat) -> CGFloat {
-                top + slope * (width * step - width / 2)
-                    + CGFloat(sin(phase + Double(step) * .pi * 2.4)) * calm
-                    + CGFloat(sin(phase * 2.6 - Double(step) * .pi * 4.2)) * choppy
+            func surfacePoint(_ u: CGFloat) -> CGPoint {
+                let step = Double(u / width)
+                let rise = CGFloat(sin(phase + step * .pi * 2.4)) * calm + CGFloat(sin(phase * 2.6 - step * .pi * 4.2)) * choppy
+                return CGPoint(x: center.x + tangent.x * u - down.x * rise, y: center.y + tangent.y * u - down.y * rise)
             }
-            var surface = Path()
-            surface.move(to: CGPoint(x: 0, y: height))
-            for step in stride(from: CGFloat(0), through: 1, by: 0.02) {
-                surface.addLine(to: CGPoint(x: width * step, y: surfaceY(step)))
+            var meniscus = Path()
+            for u in stride(from: -span, through: span, by: width * 0.02) {
+                u == -span ? meniscus.move(to: surfacePoint(u)) : meniscus.addLine(to: surfacePoint(u))
             }
-            surface.addLine(to: CGPoint(x: width, y: height))
+            var surface = meniscus
+            surface.addLine(to: CGPoint(x: center.x + tangent.x * span + down.x * span * 2, y: center.y + tangent.y * span + down.y * span * 2))
+            surface.addLine(to: CGPoint(x: center.x - tangent.x * span + down.x * span * 2, y: center.y - tangent.y * span + down.y * span * 2))
             surface.closeSubpath()
             // Water is nearly clear too: a light tint, deeper toward the sides where you look through more of it.
             let tint = warning ? Color(red: 1, green: 0.6, blue: 0.25) : Color(red: 0.25, green: 0.62, blue: 1)
-            water.fill(surface, with: .linearGradient(Gradient(colors: [tint.opacity(0.28), tint.opacity(0.5)]),
-                                                      startPoint: CGPoint(x: 0, y: top), endPoint: CGPoint(x: 0, y: height)))
+            let deep = CGPoint(x: center.x + down.x * height * 0.8, y: center.y + down.y * height * 0.8)
+            water.fill(surface, with: .linearGradient(Gradient(colors: [tint.opacity(0.28), tint.opacity(0.5)]), startPoint: center, endPoint: deep))
             water.fill(surface, with: across([
                 .init(color: tint.opacity(0.45), location: 0.1), .init(color: .clear, location: 0.3),
                 .init(color: .clear, location: 0.7), .init(color: tint.opacity(0.4), location: 0.9),
             ]))
-            var meniscus = Path()
-            for step in stride(from: CGFloat(0), through: 1, by: 0.02) {
-                let point = CGPoint(x: width * step, y: surfaceY(step))
-                step == 0 ? meniscus.move(to: point) : meniscus.addLine(to: point)
-            }
             water.stroke(meniscus, with: .color(.white.opacity(0.8)), lineWidth: max(0.6, width * 0.018))
-            water.stroke(meniscus.offsetBy(dx: 0, dy: max(1, width * 0.03)), with: .color(tint.opacity(0.35)), lineWidth: max(0.5, width * 0.012))
+            let shift = max(1, width * 0.03)
+            water.stroke(meniscus.offsetBy(dx: down.x * shift, dy: down.y * shift), with: .color(tint.opacity(0.35)), lineWidth: max(0.5, width * 0.012))
         }
 
         // The thick glass base.
