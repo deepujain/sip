@@ -116,6 +116,7 @@ struct DeskView: View {
                     .animation(.spring(duration: 0.9, bounce: 0.25), value: model.deskLevel)
                     .frame(height: 124)
                     .shadow(color: .black.opacity(0.12), radius: 3, y: 2)
+                    .rotationEffect(.radians(-Slosh.shared.lean), anchor: .bottom)
                     .scaleEffect(model.deskHover ? 1.04 : 1, anchor: .bottom)
                     .contentShape(Rectangle())
                     .gesture(drag)

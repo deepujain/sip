@@ -57,6 +57,12 @@ enum Snapshots {
         model.stage(now: slots[2].start.addingTimeInterval(60), done: 2,
                     celebration: "Bottle 2 done · \(Benefit.pick(at: slots[2].start, bottle: 1).short)")
         try live(AnyView(DeskView(model: model).padding(30).background(Color(white: 0.95))), to: folder.appending(path: "live-desk-done.png"))
+        model.stage(now: slots[2].start.addingTimeInterval(60), done: 2)
+        for (name, roll) in [("live-tilt-right-up", 0.35), ("live-tilt-left-up", -0.35)] {
+            Slosh.shared.settle(roll: roll)
+            try live(AnyView(DeskView(model: model).padding(30).background(Color(white: 0.95))), to: folder.appending(path: "\(name).png"))
+        }
+        Slosh.shared.settle(roll: 0)
         try live(AnyView(BenefitsView().background(Color(nsColor: .windowBackgroundColor))), to: folder.appending(path: "live-benefits.png"))
         try live(AnyView(AboutView().background(Color(nsColor: .windowBackgroundColor))), to: folder.appending(path: "live-about.png"))
         BottleView.drawsStill = true

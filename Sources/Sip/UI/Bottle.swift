@@ -44,7 +44,9 @@ struct BottleView: View, Animatable {
             if animated && !Self.drawsStill {
                 TimelineView(.animation(minimumInterval: sloshes ? 1 / 60 : 1 / 20)) { context in
                     canvas(phase: context.date.timeIntervalSinceReferenceDate * 1.7,
-                           tilt: sloshes ? Slosh.shared.tilt : 0, agitation: sloshes ? Slosh.shared.agitation : 0)
+                           // The bottle itself leans too, so the surface turns by that much more against it.
+                           tilt: sloshes ? Slosh.shared.tilt + Slosh.shared.lean : 0,
+                           agitation: sloshes ? Slosh.shared.agitation : 0)
                 }
             } else {
                 canvas(phase: 0.8, tilt: 0, agitation: 0)

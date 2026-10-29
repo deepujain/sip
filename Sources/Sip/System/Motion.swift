@@ -17,6 +17,10 @@ final class Slosh {
     private(set) var tilt = 0.0
     /// Ripple height from shaking, 0 to 1.
     private(set) var agitation = 0.0
+    /// How far the bottle itself leans toward the low side, relative to the screen, in radians.
+    /// Positive tips its top to the left.
+    private(set) var lean = 0.0
+    @ObservationIgnored private var leanSpeed = 0.0
 
     @ObservationIgnored private var roll = 0.0
     /// How far the surface has swung from level with the world, and how fast.
@@ -31,6 +35,14 @@ final class Slosh {
     private static let dampingRatio = 0.16
     private static let maxTilt = 0.7
     private static let dt = 1.0 / 60
+    /// The bottle leans by part of the Mac's roll, rocking into place with a springy wobble.
+    private static let leanShare = 0.5
+    /// About 13 degrees, which keeps the leaning bottle inside its panel.
+    private static let maxLean = 0.22
+    private static let leanOmega = 2 * Double.pi * 1.4
+    private static let leanDamping = 0.3
+
+    private var leanTarget: Double { max(-Self.maxLean, min(Self.maxLean, roll * Self.leanShare)) }
 
     /// The Mac's roll from level, and the lean of effective gravity from sideways acceleration, in radians.
     func update(roll: Double, push: Double) {
@@ -45,6 +57,7 @@ final class Slosh {
     func kick(_ amount: Double) {
         guard abs(amount) > 0.005 else { return }
         swingSpeed += amount
+        leanSpeed += amount * 0.4
         wake()
     }
 
@@ -60,6 +73,16 @@ final class Slosh {
         agitation = 1
         wake()
     }
+
+    #if DEBUG
+    /// Holds the Mac at a roll with everything settled, for snapshots.
+    func settle(roll: Double) {
+        self.roll = roll
+        swing = 0
+        lean = leanTarget
+        tilt = roll
+    }
+    #endif
 
     private func wake() {
         guard timer == nil else { return }
@@ -77,13 +100,21 @@ final class Slosh {
         swing = max(-0.5, min(0.5, swing + swingSpeed * dt))
         agitation = max(min(1, abs(swingSpeed) * 0.12), agitation * pow(0.3, dt))
 
+        let target = leanTarget
+        leanSpeed += (-Self.leanOmega * Self.leanOmega * (lean - target) - 2 * Self.leanDamping * Self.leanOmega * leanSpeed) * dt
+        let nextLean = max(-Self.maxLean * 1.3, min(Self.maxLean * 1.3, lean + leanSpeed * dt))
+        if abs(nextLean - lean) > 0.0003 { lean = nextLean }
+
         let next = max(-Self.maxTilt, min(Self.maxTilt, roll + swing))
         if abs(next - tilt) > 0.0005 { tilt = next }
-        if abs(swing - push) < 0.0015, abs(swingSpeed) < 0.003, agitation < 0.01 {
+        if abs(swing - push) < 0.0015, abs(swingSpeed) < 0.003, agitation < 0.01,
+           abs(lean - target) < 0.001, abs(leanSpeed) < 0.003 {
             swing = push
             swingSpeed = 0
             if agitation != 0 { agitation = 0 }
             tilt = max(-Self.maxTilt, min(Self.maxTilt, roll + swing))
+            leanSpeed = 0
+            lean = target
             timer?.invalidate()
             timer = nil
         }
