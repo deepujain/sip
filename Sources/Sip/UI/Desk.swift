@@ -75,6 +75,8 @@ struct DeskView: View {
     /// A finished bottle's message shows for a moment even without hovering.
     private var showsDetails: Bool { model.deskHover || model.celebration != nil }
     private var collapsed: Bool { model.deskCollapsed && !showsDetails }
+    /// A reminder shows on the bar itself, even with the bottle tucked away.
+    private var reminder: String? { model.celebration == nil ? model.nudgeLine : nil }
     private var alignment: HorizontalAlignment { model.deskOnLeft ? .leading : .trailing }
     private var drag: some Gesture {
         DragGesture(minimumDistance: 2, coordinateSpace: .global)
@@ -90,6 +92,18 @@ struct DeskView: View {
                 .scaleEffect(collapsed ? 0.6 : 1, anchor: .bottom)
                 .allowsHitTesting(!collapsed)
             details
+        }
+        .keyframeAnimator(initialValue: 0.0, trigger: model.wiggle) { content, angle in
+            content.rotationEffect(.degrees(angle), anchor: .bottom)
+        } keyframes: { _ in
+            KeyframeTrack {
+                CubicKeyframe(-7, duration: 0.08)
+                CubicKeyframe(7, duration: 0.12)
+                CubicKeyframe(-5, duration: 0.12)
+                CubicKeyframe(4, duration: 0.12)
+                CubicKeyframe(-2, duration: 0.1)
+                CubicKeyframe(0, duration: 0.1)
+            }
         }
         .animation(.spring(duration: 0.45, bounce: 0.2), value: collapsed)
         .padding(.horizontal, 4)
@@ -132,7 +146,11 @@ struct DeskView: View {
     /// hover, keeping its space so the bottle doesn't move.
     private var details: some View {
         VStack(alignment: alignment, spacing: 2) {
-            if !collapsed {
+            if let reminder, !model.deskHover {
+                Text(reminder)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(late ? AnyShapeStyle(Color.orange) : AnyShapeStyle(Color.accentColor))
+            } else if !collapsed {
                 Text(model.deskCaption)
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .foregroundStyle(model.celebration != nil ? AnyShapeStyle(Color.accentColor)
@@ -164,15 +182,16 @@ struct DeskView: View {
         .contentShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
         .gesture(drag)
         .animation(.easeInOut(duration: 0.3), value: model.deskCaption)
-        .opacity(showsDetails || collapsed ? 1 : 0)
-        .offset(y: showsDetails || collapsed ? 0 : 4)
+        .opacity(showsDetails || collapsed || reminder != nil ? 1 : 0)
+        .offset(y: showsDetails || collapsed || reminder != nil ? 0 : 4)
         .animation(.easeInOut(duration: 0.2), value: showsDetails)
+        .animation(.easeInOut(duration: 0.25), value: reminder)
     }
 
     /// Where the collapsed row sits in the panel, in window coordinates, so only it wakes the bottle.
-    static func collapsedRegion(bottles: Int, onLeft: Bool) -> NSRect {
-        let width = CGFloat(bottles) * 13 + 30
-        return NSRect(x: onLeft ? 0 : size.width - width, y: 0, width: width, height: 32)
+    static func collapsedRegion(bottles: Int, onLeft: Bool, withLine: Bool) -> NSRect {
+        let width = withLine ? size.width : CGFloat(bottles) * 13 + 30
+        return NSRect(x: onLeft ? 0 : size.width - width, y: 0, width: width, height: withLine ? 56 : 32)
     }
 }
 
@@ -191,7 +210,7 @@ final class DeskController {
         host.sizingOptions = []
         host.hoverRegion = { [weak model] in
             guard let model, model.deskCollapsed else { return nil }
-            return DeskView.collapsedRegion(bottles: model.slots.count, onLeft: model.deskOnLeft)
+            return DeskView.collapsedRegion(bottles: model.slots.count, onLeft: model.deskOnLeft, withLine: model.nudgeLine != nil)
         }
         host.onHover = { [weak self] inside in self?.hover(inside) }
         host.rootView = DeskView(model: model) { [weak self] ended in self?.drag(ended: ended) }

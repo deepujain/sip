@@ -27,10 +27,12 @@ enum Snapshots {
         let due = slots[1].end.addingTimeInterval(120)
         model.stage(now: due, done: 1, nudge: .due(slots[1]))
         try write(menu(model), to: folder.appending(path: "3-menu-due.png"))
-        try write(AnyView(NudgeView(model: model, nudge: .due(slots[1])).background(wallpaper)), to: folder.appending(path: "4-nudge-due.png"))
+        model.deskCollapsed = true
+        try write(desk(model), to: folder.appending(path: "4-nudge-due.png"))
         let half = slots[1].start.addingTimeInterval(slots[1].duration * 0.5)
         model.stage(now: half, done: 1, nudge: .halfway(slots[1]))
-        try write(AnyView(NudgeView(model: model, nudge: .halfway(slots[1])).background(wallpaper)), to: folder.appending(path: "4-nudge-halfway.png"))
+        try write(desk(model), to: folder.appending(path: "4-nudge-halfway.png"))
+        model.deskCollapsed = false
 
         model.stage(now: due.addingTimeInterval(700), done: 1, locked: true)
         try write(AnyView(LockView(model: model, primary: true).frame(width: 1280, height: 800).background(wallpaper)),
@@ -50,7 +52,6 @@ enum Snapshots {
         BottleView.drawsStill = false
         model.stage(now: due, done: 1, nudge: .due(slots[1]))
         try live(AnyView(DeskView(model: model).padding(30).background(Color(white: 0.95))), to: folder.appending(path: "live-desk.png"))
-        try live(AnyView(NudgeView(model: model, nudge: .due(slots[1])).background(Color(white: 0.95))), to: folder.appending(path: "live-nudge.png"))
         model.stage(now: slots[2].start.addingTimeInterval(60), done: 2,
                     celebration: "Bottle 2 done · \(Benefit.pick(at: slots[2].start, bottle: 1).short)")
         try live(AnyView(DeskView(model: model).padding(30).background(Color(white: 0.95))), to: folder.appending(path: "live-desk-done.png"))

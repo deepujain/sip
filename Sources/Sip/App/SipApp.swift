@@ -75,7 +75,6 @@ struct SipApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let model = WaterModel()
     private var desk: DeskController?
-    private var nudges: NudgeController?
     private var lock: LockController?
     private var welcomeWindow: NSWindow?
     private var benefitsWindow: NSWindow?
@@ -96,7 +95,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         model.start()
         desk = DeskController(model: model)
-        nudges = NudgeController(model: model)
         lock = LockController(model: model)
         motion.start()
         if !UserDefaults.standard.bool(forKey: Prefs.hasOnboarded) {

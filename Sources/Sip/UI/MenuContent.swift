@@ -106,7 +106,7 @@ struct MenuContent: View {
             QuickSwitch(symbol: "waterbottle.fill", title: "On Screen", isOn: $model.onScreen,
                         help: "Keep your bottle in the corner of the screen.")
             QuickSwitch(symbol: model.reminders ? "bell.fill" : "bell.slash.fill", title: "Reminders", isOn: $model.reminders,
-                        help: "A nudge halfway through each bottle, and a check when it's due.")
+                        help: "The bottle on screen wiggles halfway through each bottle, and again when it's due.")
             QuickSwitch(symbol: "lock.fill", title: "Dry Spell", isOn: $model.dryspell,
                         help: "Lock the screen for \(model.lockMinutes) minutes if a bottle is still not empty \(model.graceMinutes) minutes after it's due.")
             QuickSwitch(symbol: "video.fill", title: "Calls OK", isOn: $model.respectCalls,

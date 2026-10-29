@@ -27,6 +27,8 @@ final class WaterModel {
     var deskHover = false
     /// After a while untouched, only the row of small bottles stays on screen.
     var deskCollapsed = false
+    /// Bumped to wiggle the bottle on screen when a reminder arrives.
+    private(set) var wiggle = 0
     /// Bumped on every settings change so views reading the switches below refresh.
     private var settingsVersion = 0
 
@@ -38,6 +40,8 @@ final class WaterModel {
     @ObservationIgnored private(set) var graceUntil: Date?
     @ObservationIgnored private var nudgeExpires: Date?
     @ObservationIgnored private var celebrationExpires: Date?
+    @ObservationIgnored private var lastWiggle: Date?
+    @ObservationIgnored private var launched = false
     @ObservationIgnored let presence = Presence()
 
     init() {
@@ -267,7 +271,18 @@ final class WaterModel {
             celebrationExpires = nil
         }
 
+        // Opening Sip partway through a bottle isn't news; only a reminder that comes due later is.
+        if !launched {
+            launched = true
+            if let slot = current, now >= slot.start.addingTimeInterval(slot.duration / 2) { halfwayShown.insert(slot.index) }
+        }
+
         guard reminders, !isLocked, let slot = current, now >= dayStart, now < bedtime else { return }
+        // A due bottle keeps wiggling every couple of minutes until you drink it.
+        if case .due = nudge, let last = lastWiggle, now.timeIntervalSince(last) >= 120 {
+            wiggle += 1
+            lastWiggle = now
+        }
         if presence.isAway {
             // Time away from the Mac doesn't count against the grace period.
             if let grace = graceUntil { graceUntil = max(grace, now.addingTimeInterval(Double(graceMinutes) * 60)) }
@@ -277,7 +292,8 @@ final class WaterModel {
         let half = slot.start.addingTimeInterval(slot.duration / 2)
         if now >= half, now < slot.end, !halfwayShown.contains(slot.index) {
             halfwayShown.insert(slot.index)
-            show(.halfway(slot), for: 30)
+            show(.halfway(slot), for: 20)
+            play("Tink")
         }
         if now >= slot.end, !dueShown.contains(slot.index) {
             dueShown.insert(slot.index)
@@ -350,6 +366,18 @@ final class WaterModel {
     private func show(_ value: Nudge, for seconds: TimeInterval?) {
         nudge = value
         nudgeExpires = seconds.map { now.addingTimeInterval($0) }
+        wiggle += 1
+        lastWiggle = now
+    }
+
+    /// The reminder, as one line on the bottle's bar.
+    var nudgeLine: String? {
+        switch nudge {
+        case .halfway(let slot): return "Halfway · finish by \(Fmt.time(slot.end))"
+        case .due(let slot):
+            return dryspell ? "Due · drink by \(Fmt.time(lockAt(slot)))" : "Bottle \(slot.number) is due"
+        case nil: return nil
+        }
     }
 
     private func play(_ name: String) {
