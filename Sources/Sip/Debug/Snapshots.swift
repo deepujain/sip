@@ -20,6 +20,9 @@ enum Snapshots {
         model.deskHover = true
         try write(desk(model), to: folder.appending(path: "2-desk-hover.png"))
         model.deskHover = false
+        model.deskCollapsed = true
+        try write(desk(model), to: folder.appending(path: "2-desk-collapsed.png"))
+        model.deskCollapsed = false
 
         let due = slots[1].end.addingTimeInterval(120)
         model.stage(now: due, done: 1, nudge: .due(slots[1]))

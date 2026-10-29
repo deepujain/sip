@@ -25,26 +25,42 @@ final class FloatingPanel: NSPanel {
 /// Takes the first click even while Sip is in the background, and reports hover without needing focus.
 final class FloatingHost<Content: View>: NSHostingView<Content> {
     var onHover: ((Bool) -> Void)?
+    /// The part of the window that counts as hovering, in window coordinates; nil means all of it.
+    var hoverRegion: (() -> NSRect?)?
     private var tracking: NSTrackingArea?
+    private var inside = false
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         if let tracking { removeTrackingArea(tracking) }
-        let area = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self, userInfo: nil)
+        let area = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .mouseMoved, .activeAlways, .inVisibleRect],
+                                  owner: self, userInfo: nil)
         addTrackingArea(area)
         tracking = area
     }
 
     override func mouseEntered(with event: NSEvent) {
         super.mouseEntered(with: event)
-        onHover?(true)
+        update(event, inWindow: true)
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        super.mouseMoved(with: event)
+        update(event, inWindow: true)
     }
 
     override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
-        onHover?(false)
+        update(event, inWindow: false)
+    }
+
+    private func update(_ event: NSEvent, inWindow: Bool) {
+        let now = inWindow && (hoverRegion?().map { $0.contains(event.locationInWindow) } ?? true)
+        guard now != inside else { return }
+        inside = now
+        onHover?(now)
     }
 }
 
@@ -58,11 +74,29 @@ struct DeskView: View {
     private var late: Bool { model.phase == .due || model.phase == .overdue }
     /// A finished bottle's message shows for a moment even without hovering.
     private var showsDetails: Bool { model.deskHover || model.celebration != nil }
+    private var collapsed: Bool { model.deskCollapsed && !showsDetails }
     private var alignment: HorizontalAlignment { model.deskOnLeft ? .leading : .trailing }
+    private var drag: some Gesture {
+        DragGesture(minimumDistance: 2, coordinateSpace: .global)
+            .onChanged { _ in onDrag(false) }
+            .onEnded { _ in onDrag(true) }
+    }
 
     var body: some View {
         VStack(alignment: alignment, spacing: 6) {
             Spacer(minLength: 0)
+            bottle
+                .opacity(collapsed ? 0 : 1)
+                .scaleEffect(collapsed ? 0.6 : 1, anchor: .bottom)
+                .allowsHitTesting(!collapsed)
+            details
+        }
+        .animation(.spring(duration: 0.45, bounce: 0.2), value: collapsed)
+        .padding(.horizontal, 4)
+        .frame(width: Self.size.width, height: Self.size.height, alignment: model.deskOnLeft ? .bottomLeading : .bottomTrailing)
+    }
+
+    private var bottle: some View {
             ZStack(alignment: .bottom) {
                 BottleView(level: model.deskLevel, warning: late, sloshes: true)
                     .animation(.spring(duration: 0.9, bounce: 0.25), value: model.deskLevel)
@@ -70,9 +104,7 @@ struct DeskView: View {
                     .shadow(color: .black.opacity(0.28), radius: 8, y: 5)
                     .scaleEffect(model.deskHover ? 1.04 : 1, anchor: .bottom)
                     .contentShape(Rectangle())
-                    .gesture(DragGesture(minimumDistance: 2, coordinateSpace: .global)
-                        .onChanged { _ in onDrag(false) }
-                        .onEnded { _ in onDrag(true) })
+                    .gesture(drag)
                     .help(Text("Drag to move the bottle"))
                 if model.deskHover, model.current != nil {
                     Button {
@@ -94,8 +126,13 @@ struct DeskView: View {
             }
             .frame(width: 90)
             .animation(.spring(duration: 0.3, bounce: 0.35), value: model.deskHover)
+    }
 
-            VStack(alignment: alignment, spacing: 2) {
+    /// Caption and today's bottles. Collapsed, only the bottles show; otherwise the caption fades in on
+    /// hover, keeping its space so the bottle doesn't move.
+    private var details: some View {
+        VStack(alignment: alignment, spacing: 2) {
+            if !collapsed {
                 Text(model.deskCaption)
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .foregroundStyle(model.celebration != nil ? AnyShapeStyle(Color.accentColor)
@@ -104,32 +141,38 @@ struct DeskView: View {
                     Text(model.deskHint)
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
-                        .transition(.opacity)
                 }
-                HStack(spacing: 3) {
-                    ForEach(model.slots) { slot in
-                        Image(systemName: slot.index < model.doneCount ? "waterbottle.fill" : "waterbottle")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(slot.index < model.doneCount ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.secondary))
-                    }
-                }
-                .padding(.top, 2)
-                .help(Text("\(model.doneCount) of \(model.plan.bottleCount) bottles today"))
             }
-            .multilineTextAlignment(model.deskOnLeft ? .leading : .trailing)
-            .lineLimit(2)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-            .animation(.easeInOut(duration: 0.3), value: model.deskCaption)
-            // Only the bottle stays on screen; details fade in on hover, keeping their space so the bottle doesn't move.
-            .opacity(showsDetails ? 1 : 0)
-            .offset(y: showsDetails ? 0 : 4)
-            .animation(.easeInOut(duration: 0.2), value: showsDetails)
+            HStack(spacing: 3) {
+                ForEach(model.slots) { slot in
+                    let current = slot.index == model.doneCount
+                    Image(systemName: slot.index < model.doneCount ? "waterbottle.fill" : "waterbottle")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(slot.index < model.doneCount ? AnyShapeStyle(Color.accentColor)
+                                         : current && late ? AnyShapeStyle(Color.orange) : AnyShapeStyle(.secondary))
+                }
+            }
+            .padding(.top, collapsed ? 0 : 2)
+            .help(Text("\(model.doneCount) of \(model.plan.bottleCount) bottles today"))
         }
-        .padding(.horizontal, 4)
-        .frame(width: Self.size.width, height: Self.size.height, alignment: model.deskOnLeft ? .bottomLeading : .bottomTrailing)
+        .multilineTextAlignment(model.deskOnLeft ? .leading : .trailing)
+        .lineLimit(2)
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .gesture(drag)
+        .animation(.easeInOut(duration: 0.3), value: model.deskCaption)
+        .opacity(showsDetails || collapsed ? 1 : 0)
+        .offset(y: showsDetails || collapsed ? 0 : 4)
+        .animation(.easeInOut(duration: 0.2), value: showsDetails)
+    }
+
+    /// Where the collapsed row sits in the panel, in window coordinates, so only it wakes the bottle.
+    static func collapsedRegion(bottles: Int, onLeft: Bool) -> NSRect {
+        let width = CGFloat(bottles) * 13 + 30
+        return NSRect(x: onLeft ? 0 : size.width - width, y: 0, width: width, height: 32)
     }
 }
 
@@ -139,18 +182,50 @@ final class DeskController {
     private let panel = FloatingPanel(title: "Sip Bottle")
     private var dragStart: (mouse: CGPoint, origin: CGPoint)?
     private var lastDrag: (point: CGPoint, time: TimeInterval, velocity: Double)?
+    private var collapseTimer: Timer?
+    private static let collapseAfter: TimeInterval = 10
 
     init(model: WaterModel) {
         self.model = model
         let host = FloatingHost(rootView: DeskView(model: model) { _ in })
         host.sizingOptions = []
-        host.onHover = { [weak model] inside in model?.deskHover = inside }
+        host.hoverRegion = { [weak model] in
+            guard let model, model.deskCollapsed else { return nil }
+            return DeskView.collapsedRegion(bottles: model.slots.count, onLeft: model.deskOnLeft)
+        }
+        host.onHover = { [weak self] inside in self?.hover(inside) }
         host.rootView = DeskView(model: model) { [weak self] ended in self?.drag(ended: ended) }
         panel.contentView = host
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.layout() }
         }
         track()
+        scheduleCollapse()
+    }
+
+    private func hover(_ inside: Bool) {
+        model.deskHover = inside
+        if inside {
+            collapseTimer?.invalidate()
+            model.deskCollapsed = false
+        } else {
+            scheduleCollapse()
+        }
+    }
+
+    private func scheduleCollapse() {
+        collapseTimer?.invalidate()
+        collapseTimer = Timer.scheduledTimer(withTimeInterval: Self.collapseAfter, repeats: false) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                // Wait out a finished bottle's message, or a drag in progress.
+                if self.model.deskHover || self.model.celebration != nil || self.dragStart != nil {
+                    self.scheduleCollapse()
+                } else {
+                    self.model.deskCollapsed = true
+                }
+            }
+        }
     }
 
     private func track() {

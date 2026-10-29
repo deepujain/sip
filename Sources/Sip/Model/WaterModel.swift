@@ -25,6 +25,8 @@ final class WaterModel {
     /// A short reward shown on the bottle right after you finish one.
     private(set) var celebration: String?
     var deskHover = false
+    /// After a while untouched, only the row of small bottles stays on screen.
+    var deskCollapsed = false
     /// Bumped on every settings change so views reading the switches below refresh.
     private var settingsVersion = 0
 
