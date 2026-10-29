@@ -20,7 +20,7 @@ You know you should drink more water. You fill your bottle in the morning, and a
 **Sip** turns your daily water into a few bottles, each with a time to finish it. Your bottle stands in the corner of the screen and drains on schedule, so you can see at a glance whether you’re keeping up. If a bottle is still full well past its time, the screen locks for a short water break until you finish it.
 
 <p align="center">
-  <img src="docs/images/desk.png" width="220" alt="A water bottle in the corner of the screen, a little over half full, with a “Bottle 2 · 2 min left” caption and a row of four small bottles underneath">
+  <img src="docs/images/desk.png" width="220" alt="A water bottle in the corner of the screen, about half full, with a “Bottle 2 of 4 · finish by 2:00 PM” caption and a row of four small bottles underneath">
   &nbsp;&nbsp;
   <img src="docs/images/desk-done.png" width="220" alt="The bottle refilled after finishing one, with the caption “Bottle 2 done · helps keep headaches away” and two of the four small bottles filled in">
 </p>
@@ -40,7 +40,8 @@ You know you should drink more water. You fill your bottle in the morning, and a
 
 ### Reminders that get firmer
 
-- **The bottle drains on schedule.** The bottle in the corner shows how full it *should* be right now, with a gentle wave on top. Hover over it and click **Empty** when you finish it, and it refills for the next one.
+- **The bottle drains on schedule.** The water in the bottle shows how much should be left right now, with a gentle wave on top. If your real bottle has more left, take a few sips. Hover over it to see what the level means, and click **Finished** when your bottle is empty. It refills for the next one, and the menu bar panel can undo it.
+- **Stays out of the way.** The bottle stands in the bottom-left corner, clear of apps like Where’d It Go? that use the bottom right. Move it in **Settings › Bottle on screen**.
 - **A nudge halfway through.** Halfway through each bottle, a small card slides in under the menu bar to say it should be about half gone. It goes away on its own.
 - **A check when it’s due.** When a bottle is due, the card asks whether it’s empty and gives you a few minutes to finish it. The bottle turns orange until you do.
 
@@ -89,7 +90,7 @@ Click the water drop in the menu bar to open a small panel:
 2. Open the zip and drag **Sip.app** into your **Applications** folder.
 3. Open it. The app isn’t notarized by Apple yet, so the first time macOS says it can’t verify the developer. Open **System Settings › Privacy & Security**, scroll down, and click **Open Anyway**. You only need to do this once.
 
-Setup opens first. Pick your bottle, your goal, and your day, then click **Start**. The bottle appears in the bottom-right corner of the screen and a water drop appears in the menu bar. Sip needs no permissions.
+Setup opens first. Pick your bottle, your goal, and your day, then click **Start**. The bottle appears in the bottom-left corner of the screen and a water drop appears in the menu bar. If you don’t see the drop, your menu bar may be full: hold **⌘** and drag other icons to make room, or check **System Settings › Menu Bar**. Sip needs no permissions.
 
 Sip isn’t medical advice. If you have kidney or heart problems, or take water pills, ask your doctor how much to drink.
 

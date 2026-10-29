@@ -70,6 +70,11 @@ final class WaterModel {
         set { setFlag(Prefs.sounds, newValue) }
     }
 
+    var corner: Corner {
+        _ = settingsVersion
+        return Corner(rawValue: defaults.string(forKey: Prefs.corner) ?? "") ?? .bottomLeft
+    }
+
     var lockMinutes: Int {
         _ = settingsVersion
         return max(1, defaults.integer(forKey: Prefs.lockMinutes))
@@ -214,12 +219,25 @@ final class WaterModel {
         if let celebration { return celebration }
         switch phase {
         case .beforeDay: return "Starts at \(Fmt.time(dayStart))"
-        case .ahead: return current.map { "Bottle \($0.number) at \(Fmt.time($0.start))" } ?? ""
-        case .onPace: return current.map { "Bottle \($0.number) · \(Fmt.duration($0.end.timeIntervalSince(now))) left" } ?? ""
+        case .ahead, .onPace: return current.map { "Bottle \($0.number) of \(plan.bottleCount) · finish by \(Fmt.time($0.end))" } ?? ""
         case .due: return current.map { "Bottle \($0.number) is due" } ?? ""
         case .overdue: return current.map { "Bottle \($0.number) is overdue" } ?? ""
         case .done: return "Goal reached · \(Fmt.liters(drankML))"
         case .afterHours: return "Done for today"
+        }
+    }
+
+    /// What the water in the bottle means right now, in plain words.
+    var deskHint: String {
+        switch phase {
+        case .ahead: return "You’re ahead. Drink at your own pace."
+        case .onPace:
+            let left = Int((deskLevel * 100 / 25).rounded()) * 25
+            return left >= 100 ? "Water shows what should be left. Start sipping."
+                : left <= 0 ? "Water shows what should be left. Nearly done."
+                : "Water shows what should be left: about \(left)%."
+        case .due, .overdue: return "Finish this bottle to stop the reminders."
+        default: return ""
         }
     }
 

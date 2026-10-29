@@ -16,6 +16,7 @@ enum Prefs {
     static let graceMinutes = "graceMinutes"
     static let hasOnboarded = "hasOnboarded"
     static let history = "history"
+    static let corner = "corner"
 
     static func register() {
         UserDefaults.standard.register(defaults: [
@@ -32,7 +33,22 @@ enum Prefs {
             sounds: true,
             lockMinutes: 15,
             graceMinutes: 10,
+            corner: Corner.bottomLeft.rawValue,
         ])
+    }
+}
+
+/// Where the bottle stands. Bottom left by default, so it stays clear of apps that use the bottom-right corner.
+enum Corner: String, CaseIterable, Identifiable {
+    case bottomLeft, bottomRight
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .bottomLeft: "Bottom left"
+        case .bottomRight: "Bottom right"
+        }
     }
 }
 

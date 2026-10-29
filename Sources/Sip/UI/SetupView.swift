@@ -256,10 +256,34 @@ struct SettingsView: View {
     let model: WaterModel
     @AppStorage(Prefs.lockMinutes) private var lockMinutes = 15
     @AppStorage(Prefs.graceMinutes) private var graceMinutes = 10
+    @AppStorage(Prefs.corner) private var corner = Corner.bottomLeft.rawValue
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             SetupFields()
+            VStack(alignment: .leading, spacing: 8) {
+                Text("BOTTLE ON SCREEN")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(0.8)
+                    .foregroundStyle(.tertiary)
+                HStack(spacing: 6) {
+                    Text("Corner").font(.system(size: 12, weight: .medium)).frame(width: 110, alignment: .leading)
+                    ForEach(Corner.allCases) { option in
+                        Button {
+                            corner = option.rawValue
+                        } label: {
+                            Text(option.title)
+                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 5)
+                                .foregroundStyle(corner == option.rawValue ? Color.white : Color.primary)
+                                .background(corner == option.rawValue ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary.opacity(0.6)),
+                                            in: Capsule())
+                        }
+                        .buttonStyle(PressableStyle())
+                    }
+                }
+            }
             VStack(alignment: .leading, spacing: 8) {
                 Text("DRY SPELL")
                     .font(.system(size: 10, weight: .semibold))
