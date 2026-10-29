@@ -27,6 +27,12 @@ struct SipApp: App {
             sensors.stop()
             exit(0)
         }
+        if arguments.contains("--glass-test") {
+            NSApplication.shared.setActivationPolicy(.accessory)
+            GlassTest.show()
+            RunLoop.main.run(until: Date().addingTimeInterval(6))
+            exit(0)
+        }
         if arguments.contains("--watchdog-test") {
             // Freezes the main thread with the watchdog armed; the process should end with status 3.
             let watchdog = LockWatchdog(limit: 6)

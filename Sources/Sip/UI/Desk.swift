@@ -209,6 +209,8 @@ final class DeskController {
     private var lastDrag: (point: CGPoint, time: TimeInterval, velocity: Double)?
     private var collapseTimer: Timer?
     private static let collapseAfter: TimeInterval = 5
+    private var tiltTimer: Timer?
+    private var lastLean = 0.0
 
     init(model: WaterModel) {
         self.model = model
@@ -226,6 +228,7 @@ final class DeskController {
         }
         track()
         scheduleCollapse()
+        watchTilt()
     }
 
     private func hover(_ inside: Bool) {
@@ -245,7 +248,7 @@ final class DeskController {
             MainActor.assumeIsolated {
                 guard let self else { return }
                 // Wait out a finished bottle's message, or a drag in progress.
-                if self.model.deskHover || self.model.celebration != nil || self.dragStart != nil {
+                if self.model.deskHover || self.model.celebration != nil || self.dragStart != nil || self.tilting {
                     self.scheduleCollapse()
                 } else {
                     self.model.deskIntro = false
@@ -253,6 +256,27 @@ final class DeskController {
                 }
             }
         }
+    }
+
+    /// Tilting the Mac is playing with the bottle, so it shows while it leans or rocks.
+    private var tilting: Bool {
+        let motion = Slosh.shared
+        return abs(motion.lean) > 0.12 || abs(motion.lean - lastLean) > 0.04 || motion.agitation > 0.3
+    }
+
+    private func watchTilt() {
+        let timer = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if self.tilting && self.model.deskCollapsed {
+                    self.model.deskCollapsed = false
+                    self.scheduleCollapse()
+                }
+                self.lastLean = Slosh.shared.lean
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        tiltTimer = timer
     }
 
     private func track() {

@@ -101,9 +101,23 @@ struct BottleView: View, Animatable {
                 canvas(phase: 0.8, tilt: 0, agitation: 0)
             }
         }
+        .background { if sloshes { refraction } }
         .aspectRatio(Self.aspect, contentMode: .fit)
         .accessibilityElement()
         .accessibilityLabel(Text("Bottle \(Int((level * 100).rounded())) percent full"))
+    }
+
+    /// Clear Liquid Glass along the bottle's sides, where real glass bends the light most, so text and
+    /// windows behind it soften and bend at the edges and stay sharp through the middle.
+    @ViewBuilder private var refraction: some View {
+        if #available(macOS 26, *), !Self.drawsStill {
+            Color.clear
+                .glassEffect(.clear, in: BottleShape())
+                .clipShape(BottleShape())
+                .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .clear, location: 0.3),
+                                             .init(color: .clear, location: 0.7), .init(color: .black, location: 1)],
+                                     startPoint: .leading, endPoint: .trailing))
+        }
     }
 
     private func canvas(phase: Double, tilt: Double, agitation: Double) -> some View {
