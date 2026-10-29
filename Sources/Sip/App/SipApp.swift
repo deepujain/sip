@@ -17,6 +17,15 @@ struct SipApp: App {
             }
         }
         #if DEBUG
+        if let flag = arguments.firstIndex(of: "--motion-log"), arguments.indices.contains(flag + 1) {
+            let sensors = MotionSensors()
+            sensors.log = FileHandle(forWritingAtPath: arguments[flag + 1])
+            sensors.start()
+            let seconds = arguments.indices.contains(flag + 2) ? Double(arguments[flag + 2]) ?? 90 : 90
+            RunLoop.main.run(until: Date().addingTimeInterval(seconds))
+            sensors.stop()
+            exit(0)
+        }
         if arguments.contains("--motion") {
             let sensors = MotionSensors()
             sensors.start()

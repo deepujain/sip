@@ -99,6 +99,9 @@ final class MotionSensors {
     private var lastLid: Double?
     private var gravity = (x: 0.0, y: 0.0, z: -1.0)
     private var felt = (x: 0.0, y: 0.0, z: -1.0)
+    #if DEBUG
+    var log: FileHandle?
+    #endif
     private let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: 64)
     private var restore: [(io_object_t, String, CFTypeRef)] = []
 
@@ -162,6 +165,10 @@ final class MotionSensors {
         var push = angle(felt) - roll
         push = abs(push) < 0.01 ? 0 : push - 0.01 * (push > 0 ? 1 : -1)
         Slosh.shared.update(roll: roll, push: max(-0.4, min(0.4, push)))
+        #if DEBUG
+        log?.write(Data(String(format: "%.3f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n", ProcessInfo.processInfo.systemUptime,
+                               sample.0, sample.1, sample.2, roll, push, Slosh.shared.tilt).utf8))
+        #endif
     }
 
     private func readLid() {

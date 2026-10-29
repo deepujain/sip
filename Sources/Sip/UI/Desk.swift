@@ -56,6 +56,8 @@ struct DeskView: View {
     static let size = CGSize(width: 200, height: 236)
 
     private var late: Bool { model.phase == .due || model.phase == .overdue }
+    /// A finished bottle's message shows for a moment even without hovering.
+    private var showsDetails: Bool { model.deskHover || model.celebration != nil }
     private var alignment: HorizontalAlignment { model.deskOnLeft ? .leading : .trailing }
 
     var body: some View {
@@ -98,7 +100,7 @@ struct DeskView: View {
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .foregroundStyle(model.celebration != nil ? AnyShapeStyle(Color.accentColor)
                                      : late ? AnyShapeStyle(Color.orange) : AnyShapeStyle(.primary))
-                if model.deskHover, model.celebration == nil, !model.deskHint.isEmpty {
+                if model.celebration == nil, !model.deskHint.isEmpty {
                     Text(model.deskHint)
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
@@ -120,8 +122,11 @@ struct DeskView: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-            .animation(.easeInOut(duration: 0.25), value: model.deskHover)
             .animation(.easeInOut(duration: 0.3), value: model.deskCaption)
+            // Only the bottle stays on screen; details fade in on hover, keeping their space so the bottle doesn't move.
+            .opacity(showsDetails ? 1 : 0)
+            .offset(y: showsDetails ? 0 : 4)
+            .animation(.easeInOut(duration: 0.2), value: showsDetails)
         }
         .padding(.horizontal, 4)
         .frame(width: Self.size.width, height: Self.size.height, alignment: model.deskOnLeft ? .bottomLeading : .bottomTrailing)

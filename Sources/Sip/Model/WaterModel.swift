@@ -228,7 +228,7 @@ final class WaterModel {
 
     /// What the water in the bottle means right now, in plain words.
     var deskHint: String {
-        let total = "Water shows today’s total: \(Fmt.liters(drankML)) of \(Fmt.liters(plan.goalML))."
+        let total = "Today: \(Fmt.liters(drankML)) of \(Fmt.liters(plan.goalML))"
         switch phase {
         case .ahead, .onPace: return total
         case .due, .overdue: return "Finish this bottle to stop the reminders."
