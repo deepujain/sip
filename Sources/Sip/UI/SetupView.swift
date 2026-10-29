@@ -343,7 +343,7 @@ struct SettingsView: View {
                 choices(title: "Lock for", values: [5, 10, 15, 20], selection: $lockMinutes)
                 choices(title: "Grace after due", values: [5, 10, 15, 30], selection: $graceMinutes)
                 HStack {
-                    Text("Never during calls, when you're away, or in the hour before bed. Hold the bottom of the lock screen for three seconds to get out in an emergency.")
+                    Text("Never during calls, when you're away, or in the hour before bed. In an emergency, hold the bottle’s cap until it unscrews.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
