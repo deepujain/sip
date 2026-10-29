@@ -20,6 +20,8 @@ enum Prefs {
     static let showInDock = "showInDock"
     /// Where you dragged the bottle: the panel's origin, as [x, y].
     static let deskOrigin = "deskOrigin"
+    /// Set once Sip has added itself to login items, so turning it off in System Settings sticks.
+    static let loginItemSet = "loginItemSet"
 
     static func register() {
         UserDefaults.standard.register(defaults: [

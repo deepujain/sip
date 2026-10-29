@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 import SwiftUI
 
 @main
@@ -83,6 +84,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         applyDockPolicy()
+        // Reminders only work while Sip runs, so it opens at login unless you turn that off.
+        if !UserDefaults.standard.bool(forKey: Prefs.loginItemSet) {
+            try? SMAppService.mainApp.register()
+            UserDefaults.standard.set(true, forKey: Prefs.loginItemSet)
+        }
         NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.applyDockPolicy() }
         }

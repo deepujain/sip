@@ -1,3 +1,4 @@
+import ServiceManagement
 import SwiftUI
 
 /// Bottle, goal, and day: everything the plan is made from, with the resulting schedule underneath.
@@ -258,6 +259,12 @@ struct SettingsView: View {
     @AppStorage(Prefs.graceMinutes) private var graceMinutes = 10
     @AppStorage(Prefs.corner) private var corner = Corner.bottomRight.rawValue
     @AppStorage(Prefs.showInDock) private var showInDock = true
+    private let loginState = State(initialValue: SMAppService.mainApp.status == .enabled)
+
+    private var launchAtLogin: Bool {
+        get { loginState.wrappedValue }
+        nonmutating set { loginState.wrappedValue = newValue }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -300,6 +307,28 @@ struct SettingsView: View {
                                 .padding(.vertical, 5)
                                 .foregroundStyle(showInDock == option ? Color.white : Color.primary)
                                 .background(showInDock == option ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary.opacity(0.6)),
+                                            in: Capsule())
+                        }
+                        .buttonStyle(PressableStyle())
+                    }
+                }
+                HStack(spacing: 6) {
+                    Text("Open at login").font(.system(size: 12, weight: .medium)).frame(width: 110, alignment: .leading)
+                    ForEach([true, false], id: \.self) { option in
+                        Button {
+                            do {
+                                if option { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+                            } catch {
+                                NSSound.beep()
+                            }
+                            launchAtLogin = SMAppService.mainApp.status == .enabled
+                        } label: {
+                            Text(option ? "On" : "Off")
+                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 5)
+                                .foregroundStyle(launchAtLogin == option ? Color.white : Color.primary)
+                                .background(launchAtLogin == option ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary.opacity(0.6)),
                                             in: Capsule())
                         }
                         .buttonStyle(PressableStyle())
