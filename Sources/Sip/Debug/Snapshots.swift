@@ -15,6 +15,8 @@ enum Snapshots {
         let midday = slots[1].start.addingTimeInterval(slots[1].duration * 0.4)
 
         model.stage(now: midday, done: 1)
+        try write(desk(model), to: folder.appending(path: "2-desk-intro.png"))
+        model.deskIntro = false
         try write(menu(model), to: folder.appending(path: "1-menu.png"))
         try write(desk(model), to: folder.appending(path: "2-desk.png"))
         model.deskHover = true

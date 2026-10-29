@@ -73,7 +73,7 @@ struct DeskView: View {
 
     private var late: Bool { model.phase == .due || model.phase == .overdue }
     /// A finished bottle's message shows for a moment even without hovering.
-    private var showsDetails: Bool { model.deskHover || model.celebration != nil }
+    private var showsDetails: Bool { model.deskHover || model.celebration != nil || model.deskIntro }
     private var collapsed: Bool { model.deskCollapsed && !showsDetails }
     /// A reminder shows on the bar itself, even with the bottle tucked away.
     private var reminder: String? { model.celebration == nil ? model.nudgeLine : nil }
@@ -124,7 +124,7 @@ struct DeskView: View {
                     Button {
                         model.finishBottle()
                     } label: {
-                        Label("Drank it", systemImage: "checkmark")
+                        Label("Done", systemImage: "checkmark")
                             .font(.system(size: 11, weight: .semibold, design: .rounded))
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
@@ -142,8 +142,7 @@ struct DeskView: View {
             .animation(.spring(duration: 0.3, bounce: 0.35), value: model.deskHover)
     }
 
-    /// Caption and today's bottles. Collapsed, only the bottles show; otherwise the caption fades in on
-    /// hover, keeping its space so the bottle doesn't move.
+    /// Caption and today's bottles. Collapsed, only the bottles show.
     private var details: some View {
         VStack(alignment: alignment, spacing: 2) {
             if let reminder, !model.deskHover {
@@ -182,9 +181,6 @@ struct DeskView: View {
         .contentShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
         .gesture(drag)
         .animation(.easeInOut(duration: 0.3), value: model.deskCaption)
-        .opacity(showsDetails || collapsed || reminder != nil ? 1 : 0)
-        .offset(y: showsDetails || collapsed || reminder != nil ? 0 : 4)
-        .animation(.easeInOut(duration: 0.2), value: showsDetails)
         .animation(.easeInOut(duration: 0.25), value: reminder)
     }
 
@@ -224,6 +220,7 @@ final class DeskController {
 
     private func hover(_ inside: Bool) {
         model.deskHover = inside
+        model.deskIntro = false
         if inside {
             collapseTimer?.invalidate()
             model.deskCollapsed = false
@@ -241,6 +238,7 @@ final class DeskController {
                 if self.model.deskHover || self.model.celebration != nil || self.dragStart != nil {
                     self.scheduleCollapse()
                 } else {
+                    self.model.deskIntro = false
                     self.model.deskCollapsed = true
                 }
             }

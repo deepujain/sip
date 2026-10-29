@@ -27,6 +27,8 @@ final class WaterModel {
     var deskHover = false
     /// After a while untouched, only the row of small bottles stays on screen.
     var deskCollapsed = false
+    /// Right after Sip starts, the bottle shows its details until it first tucks away.
+    var deskIntro = true
     /// Bumped to wiggle the bottle on screen when a reminder arrives.
     private(set) var wiggle = 0
     /// Bumped on every settings change so views reading the switches below refresh.
