@@ -42,7 +42,7 @@ struct LockView: View {
 
     private var content: some View {
         HStack(spacing: 48) {
-            CapUnlock(level: model.previewLock ? 0.3 : 0.06) { model.endLock(finished: false, emergency: true) }
+            CapUnlock(level: model.previewLock ? 0.3 : 0.06, sounds: model.sounds) { model.endLock(finished: false, emergency: true) }
                 .frame(height: 360)
                 .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
             VStack(alignment: .leading, spacing: 20) {
@@ -157,6 +157,7 @@ private struct Countdown: View {
 /// That bottle won't lock the Mac again.
 struct CapUnlock: View {
     let level: Double
+    let sounds: Bool
     let action: () -> Void
     private static let holdTime = 3.0
     private static let settleTime = 0.3
@@ -211,7 +212,7 @@ struct CapUnlock: View {
                 .onHover { inside in (inside ? NSCursor.openHand : NSCursor.arrow).set() }
                 .onLongPressGesture(minimumDuration: Self.holdTime, maximumDistance: 60) {
                     hold = Hold(popped: true)
-                    NSSound(named: "Pop")?.play()
+                    if sounds { NSSound(named: "Pop")?.play() }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { action() }
                 } onPressingChanged: { pressing in
                     guard !hold.popped else { return }
