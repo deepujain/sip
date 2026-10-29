@@ -73,6 +73,9 @@ enum Snapshots {
             try live(AnyView(LockView(model: model, primary: true).frame(width: size.width, height: size.height)),
                      to: folder.appending(path: "\(name).png"))
         }
+        CapUnlock.previewTurn = 0.6
+        try live(AnyView(LockView(model: model, primary: true).frame(width: 1024, height: 640)), to: folder.appending(path: "live-lock-unscrewing.png"))
+        CapUnlock.previewTurn = nil
         LockView.backdrop = nil
     }
 

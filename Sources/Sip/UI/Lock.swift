@@ -42,7 +42,7 @@ struct LockView: View {
 
     private var content: some View {
         HStack(spacing: 48) {
-            BottleView(level: model.previewLock ? 0.3 : 0.06, warning: true)
+            CapUnlock(level: model.previewLock ? 0.3 : 0.06) { model.endLock(finished: false, emergency: true) }
                 .frame(height: 360)
                 .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
             VStack(alignment: .leading, spacing: 20) {
@@ -64,13 +64,12 @@ struct LockView: View {
                     }
                     .keyboardShortcut(.return)
                 }
-                HStack(alignment: .bottom, spacing: 16) {
-                    EmergencyHold { model.endLock(finished: false, emergency: true) }
-                    Text("or press Esc three times")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.55))
-                        .padding(.bottom, 10)
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.counterclockwise")
+                    Text("Emergency? Hold the cap to unscrew it, or press Esc three times.")
                 }
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(.white.opacity(0.6))
             }
             .frame(width: 470, alignment: .leading)
         }
@@ -153,37 +152,79 @@ private struct Countdown: View {
     }
 }
 
-/// Always a way out: hold for three seconds. That bottle won't lock the Mac again.
-private struct EmergencyHold: View {
+/// Always a way out: hold the bottle's cap and it unscrews, rising a little with each turn, until it pops
+/// off after three seconds and the screen unlocks. Let go early and it screws itself back down.
+/// That bottle won't lock the Mac again.
+struct CapUnlock: View {
+    let level: Double
     let action: () -> Void
-    private let progressState = State(initialValue: 0.0)
+    private static let holdTime = 3.0
+    private static let settleTime = 0.3
 
-    private var progress: Double {
-        get { progressState.wrappedValue }
-        nonmutating set { progressState.wrappedValue = newValue }
+    private struct Hold { var pressed: Date?; var released: (at: Date, from: Double)?; var popped = false }
+    private let holdState = State(initialValue: Hold())
+    private var hold: Hold {
+        get { holdState.wrappedValue }
+        nonmutating set { holdState.wrappedValue = newValue }
+    }
+
+    #if DEBUG
+    nonisolated(unsafe) static var previewTurn: Double?
+    #endif
+
+    private func turn(at date: Date) -> Double {
+        #if DEBUG
+        if let turn = Self.previewTurn { return turn }
+        #endif
+        if hold.popped { return 1 }
+        if let pressed = hold.pressed { return min(1, date.timeIntervalSince(pressed) / Self.holdTime) }
+        if let released = hold.released { return max(0, released.from * (1 - date.timeIntervalSince(released.at) / Self.settleTime)) }
+        return 0
     }
 
     var body: some View {
-        VStack(spacing: 6) {
-            Text(progress > 0 ? "Keep holding…" : "Hold here for an emergency unlock")
-                .font(.footnote.weight(.medium))
-                .foregroundStyle(.white.opacity(0.6))
-            Capsule()
-                .fill(.white.opacity(0.15))
-                .frame(width: 180, height: 4)
-                .overlay(alignment: .leading) {
-                    Capsule().fill(.white.opacity(0.85)).frame(width: 180 * progress, height: 4)
+        TimelineView(.animation(paused: hold.pressed == nil && hold.released == nil)) { context in
+            let turn = turn(at: context.date)
+            ZStack {
+                BottleView(level: level, warning: true, cap: .off)
+                BottleView(level: level, animated: false, capTurn: turn, cap: .alone)
+                    // Slight wobble as it turns, a rise of a few threads, then it flies off.
+                    .rotationEffect(.degrees(hold.popped ? -40 : sin(turn * 40) * 1.5 * turn), anchor: .top)
+                    .offset(x: hold.popped ? -30 : 0, y: hold.popped ? -120 : -CGFloat(turn) * 16)
+                    .opacity(hold.popped ? 0 : 1)
+                    .animation(.easeOut(duration: 0.5), value: hold.popped)
+            }
+            .overlay(alignment: .top) { grip }
+        }
+    }
+
+    private var grip: some View {
+        GeometryReader { space in
+            Color.clear
+                .contentShape(Rectangle())
+                .frame(width: space.size.width * 0.75, height: space.size.height * 0.2)
+                .frame(maxWidth: .infinity)
+                .offset(y: -space.size.height * 0.05)
+                .onHover { inside in (inside ? NSCursor.openHand : NSCursor.arrow).set() }
+                .onLongPressGesture(minimumDuration: Self.holdTime, maximumDistance: 60) {
+                    hold = Hold(popped: true)
+                    NSSound(named: "Pop")?.play()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { action() }
+                } onPressingChanged: { pressing in
+                    guard !hold.popped else { return }
+                    if pressing {
+                        NSCursor.closedHand.set()
+                        hold = Hold(pressed: Date())
+                    } else {
+                        let from = turn(at: Date())
+                        hold = Hold(released: (Date(), from))
+                        DispatchQueue.main.asyncAfter(deadline: .now() + Self.settleTime) {
+                            if hold.pressed == nil && !hold.popped { hold = Hold() }
+                        }
+                    }
                 }
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 10)
-        .contentShape(Rectangle())
-        .onLongPressGesture(minimumDuration: 3, maximumDistance: 40) {
-            progress = 0
-            action()
-        } onPressingChanged: { pressing in
-            withAnimation(pressing ? .linear(duration: 3) : .easeOut(duration: 0.2)) { progress = pressing ? 1 : 0 }
-        }
+        .help(Text("Hold the cap for an emergency unlock"))
     }
 }
 

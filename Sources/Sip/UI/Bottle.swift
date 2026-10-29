@@ -82,6 +82,11 @@ struct BottleView: View, Animatable {
     var warning = false
     /// Follow the Mac's tilt and movement.
     var sloshes = false
+    /// How far the cap has been unscrewed, 0 to 1; its ribs slide by as it turns.
+    var capTurn = 0.0
+    var cap = CapPart.on
+
+    enum CapPart { case on, off, alone }
 
     /// Image rendering can't draw a timeline, so snapshots draw the water still.
     nonisolated(unsafe) static var drawsStill = false
@@ -122,7 +127,10 @@ struct BottleView: View, Animatable {
 
     private func canvas(phase: Double, tilt: Double, agitation: Double) -> some View {
         Canvas { context, size in
-            Self.draw(in: &context, size: size, level: level, phase: phase, warning: warning, tilt: tilt, agitation: agitation)
+            if cap != .alone {
+                Self.draw(in: &context, size: size, level: level, phase: phase, warning: warning, tilt: tilt, agitation: agitation)
+            }
+            if cap != .off { Self.drawCap(in: &context, size: size, turn: capTurn) }
         }
     }
 
@@ -131,6 +139,13 @@ struct BottleView: View, Animatable {
         let rect = CGRect(origin: .zero, size: size)
         let width = size.width, height = size.height
         let outline = BottleShape().path(in: rect)
+
+        // Screw threads on the neck, hidden under the cap until it's unscrewed.
+        for step in 0..<2 {
+            let y = height * (0.1 + CGFloat(step) * 0.006)
+            context.stroke(Path { $0.move(to: CGPoint(x: width * 0.36, y: y + height * 0.003)); $0.addLine(to: CGPoint(x: width * 0.64, y: y)) },
+                           with: .color(.white.opacity(0.55)), lineWidth: max(0.6, width * 0.014))
+        }
 
         // Clear glass: whatever is behind shows through. A cylinder catches light at its edges, not its middle.
         let across = { (stops: [Gradient.Stop]) in
@@ -207,8 +222,11 @@ struct BottleView: View, Animatable {
         // A dark rim and a bright one, so clear glass still reads on light and dark desktops alike.
         context.stroke(outline, with: .color(Color(red: 0.1, green: 0.16, blue: 0.28).opacity(0.38)), lineWidth: max(1, width * 0.024))
         context.stroke(outline, with: .color(.white.opacity(0.75)), lineWidth: max(0.5, width * 0.009))
+    }
 
-        // A ribbed navy screw cap with a rolled lip.
+    /// A ribbed navy screw cap with a rolled lip. Turning it slides the ribs across, like a real one spinning.
+    private static func drawCap(in context: inout GraphicsContext, size: CGSize, turn: Double) {
+        let width = size.width, height = size.height
         let capRect = CGRect(x: width * 0.31, y: 0, width: width * 0.38, height: height * 0.112)
         let cap = Path(roundedRect: capRect, cornerRadius: width * 0.045)
         context.fill(cap, with: .linearGradient(
@@ -219,11 +237,12 @@ struct BottleView: View, Animatable {
             startPoint: CGPoint(x: capRect.minX, y: 0), endPoint: CGPoint(x: capRect.maxX, y: 0)))
         var ribs = context
         ribs.clip(to: cap)
-        var x = capRect.minX + width * 0.03
+        let spacing = width * 0.034
+        var x = capRect.minX + width * 0.03 - spacing + spacing * CGFloat((turn * 14).truncatingRemainder(dividingBy: 1))
         while x < capRect.maxX - width * 0.01 {
             ribs.fill(Path(CGRect(x: x, y: capRect.minY + height * 0.012, width: max(0.4, width * 0.008), height: capRect.height * 0.72)),
                       with: .color(.black.opacity(0.35)))
-            x += width * 0.034
+            x += spacing
         }
         ribs.fill(Path(CGRect(x: capRect.minX, y: capRect.maxY - height * 0.018, width: capRect.width, height: height * 0.018)),
                   with: .color(Color(red: 0.25, green: 0.4, blue: 0.8).opacity(0.7)))
