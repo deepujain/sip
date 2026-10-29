@@ -5,6 +5,10 @@ import SwiftUI
 struct LockView: View {
     let model: WaterModel
     let primary: Bool
+    #if DEBUG
+    /// A still photo behind the frosted glass, for the website images.
+    static var backdrop: AnyView?
+    #endif
 
     var body: some View {
         ZStack {
@@ -13,6 +17,9 @@ struct LockView: View {
             } else {
                 Blur()
             }
+            #if DEBUG
+            Self.backdrop
+            #endif
             Color.black.opacity(0.38)
             if primary { content }
         }

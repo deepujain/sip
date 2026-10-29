@@ -37,6 +37,10 @@ struct SipApp: App {
             sensors.stop()
             exit(0)
         }
+        if let flag = arguments.firstIndex(of: "--marketing"), arguments.indices.contains(flag + 1) {
+            Marketing.render(to: URL(fileURLWithPath: arguments[flag + 1], isDirectory: true))
+            exit(0)
+        }
         if let flag = arguments.firstIndex(of: "--snapshots"), arguments.indices.contains(flag + 1) {
             do {
                 try Snapshots.render(to: URL(fileURLWithPath: arguments[flag + 1], isDirectory: true))
