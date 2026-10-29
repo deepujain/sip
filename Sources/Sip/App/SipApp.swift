@@ -17,6 +17,16 @@ struct SipApp: App {
             }
         }
         #if DEBUG
+        if arguments.contains("--motion") {
+            let sensors = MotionSensors()
+            sensors.start()
+            for _ in 0..<6 {
+                RunLoop.main.run(until: Date().addingTimeInterval(0.5))
+                print(String(format: "tilt %.3f rad  agitation %.2f", Slosh.shared.tilt, Slosh.shared.agitation))
+            }
+            sensors.stop()
+            exit(0)
+        }
         if let flag = arguments.firstIndex(of: "--snapshots"), arguments.indices.contains(flag + 1) {
             do {
                 try Snapshots.render(to: URL(fileURLWithPath: arguments[flag + 1], isDirectory: true))
@@ -54,6 +64,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var benefitsWindow: NSWindow?
 
     private var todayWindow: NSWindow?
+    private let motion = MotionSensors()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         applyDockPolicy()
@@ -64,6 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         desk = DeskController(model: model)
         nudges = NudgeController(model: model)
         lock = LockController(model: model)
+        motion.start()
         if !UserDefaults.standard.bool(forKey: Prefs.hasOnboarded) {
             showWelcome()
         }
@@ -71,6 +83,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         NSApp.presentationOptions = []
+        motion.stop()
     }
 
     /// Clicking the Dock icon opens today's bottles, for when the menu bar is too full to show Sip's drop.

@@ -41,7 +41,8 @@ You know you should drink more water. You fill your bottle in the morning, and a
 ### Reminders that get firmer
 
 - **The bottle drains on schedule.** The water in the bottle shows how much should be left right now, with a gentle wave on top. If your real bottle has more left, take a few sips. Hover over it to see what the level means, and click **Finished** when your bottle is empty. It refills for the next one, and the menu bar panel can undo it.
-- **Stays out of the way.** The bottle stands in the bottom-left corner, clear of apps like Where’d It Go? that use the bottom right. Move it in **Settings › Bottle on screen**.
+- **Water you can tilt.** On a MacBook, the water stays level as you tilt the laptop, sloshes when you bump it, open or close the lid, or drag the bottle across the screen, and splashes when a bottle refills. Sip reads the built-in accelerometer and lid sensor, and needs no permission to do it.
+- **Put it anywhere.** Drag the bottle wherever you like and it stays there. It starts on the right side, above the bottom-right corner, so it doesn’t cover apps like Where’d It Go?. **Settings › Bottle on screen** puts it back on the left or right side.
 - **A nudge halfway through.** Halfway through each bottle, a small card slides in under the menu bar to say it should be about half gone. It goes away on its own.
 - **A check when it’s due.** When a bottle is due, the card asks whether it’s empty and gives you a few minutes to finish it. The bottle turns orange until you do.
 
@@ -90,7 +91,7 @@ Click the water drop in the menu bar, or Sip’s icon in the Dock, to open a sma
 2. Open the zip and drag **Sip.app** into your **Applications** folder.
 3. Open it. The app isn’t notarized by Apple yet, so the first time macOS says it can’t verify the developer. Open **System Settings › Privacy & Security**, scroll down, and click **Open Anyway**. You only need to do this once.
 
-Setup opens first. Pick your bottle, your goal, and your day, then click **Start**. The bottle appears in the bottom-left corner of the screen, a water drop appears in the menu bar, and Sip’s icon appears in the Dock. If you don’t see the drop, your menu bar is full and macOS has hidden it behind the camera notch: click the Dock icon instead, or hold **⌘** and drag other menu bar icons to make room. Sip needs no permissions.
+Setup opens first. Pick your bottle, your goal, and your day, then click **Start**. The bottle appears on the right side of the screen, a water drop appears in the menu bar, and Sip’s icon appears in the Dock. If you don’t see the drop, your menu bar is full and macOS has hidden it behind the camera notch: click the Dock icon instead, or hold **⌘** and drag other menu bar icons to make room. Sip needs no permissions.
 
 Sip isn’t medical advice. If you have kidney or heart problems, or take water pills, ask your doctor how much to drink.
 
@@ -111,6 +112,7 @@ This builds a universal release binary, assembles `build/Sip.app` with its icon,
 - Splits your daily goal into bottles and gives each one time in proportion to how much it holds, from when you wake up until an hour before bed.
 - Shows the bottle and the reminder card in borderless, non-activating panels, so they never steal focus.
 - The Dry Spell covers every display with a window above everything else and turns off the Dock, the menu bar, and app switching until you finish the bottle or the time runs out.
+- Moves the water with a small spring model driven by the MacBook’s accelerometer (through the Apple sensor hub’s HID interface) and lid angle sensor. Sip turns the sensor hub’s reporting on while it runs and restores its earlier settings when it quits. On Macs without these sensors, the water still sloshes when you drag the bottle.
 - Knows when you’re on a call by asking Core Audio and Core Media I/O whether the microphone or camera is in use, and knows when you’re away from screen lock, sleep, and input idle time.
 - Keeps 60 days of finished bottles in its own preferences for your streak. Built with SwiftUI and AppKit. No dependencies, no network access, no analytics.
 
@@ -120,7 +122,7 @@ This builds a universal release binary, assembles `build/Sip.app` with its icon,
 Sources/Sip/
   App/       App entry point, windows, the app icon artwork
   Model/     The daily plan, the reminder and lock logic, and the water benefits
-  System/    Call and away detection
+  System/    Call and away detection, and the motion sensors behind the sloshing water
   UI/        Bottle, menu panel, desktop bottle, reminder card, lock screen, setup, and Why water
   Debug/     Debug-only snapshot renderer for reviewing the UI
 Resources/   Info.plist

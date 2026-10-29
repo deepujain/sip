@@ -72,8 +72,11 @@ final class WaterModel {
 
     var corner: Corner {
         _ = settingsVersion
-        return Corner(rawValue: defaults.string(forKey: Prefs.corner) ?? "") ?? .bottomLeft
+        return Corner(rawValue: defaults.string(forKey: Prefs.corner) ?? "") ?? .bottomRight
     }
+
+    /// Which way the caption lines up, following where the bottle is on screen.
+    var deskOnLeft = false
 
     var lockMinutes: Int {
         _ = settingsVersion
@@ -313,6 +316,7 @@ final class WaterModel {
         dismissNudge()
         if isLocked { endLock(finished: true) }
         play("Bottle")
+        Slosh.shared.splash()
         streak = computeStreak()
         now = at
     }

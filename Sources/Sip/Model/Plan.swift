@@ -18,6 +18,8 @@ enum Prefs {
     static let history = "history"
     static let corner = "corner"
     static let showInDock = "showInDock"
+    /// Where you dragged the bottle: the panel's origin, as [x, y].
+    static let deskOrigin = "deskOrigin"
 
     static func register() {
         UserDefaults.standard.register(defaults: [
@@ -34,13 +36,13 @@ enum Prefs {
             sounds: true,
             lockMinutes: 15,
             graceMinutes: 10,
-            corner: Corner.bottomLeft.rawValue,
+            corner: Corner.bottomRight.rawValue,
             showInDock: true,
         ])
     }
 }
 
-/// Where the bottle stands. Bottom left by default, so it stays clear of apps that use the bottom-right corner.
+/// Which side of the screen the bottle starts on, until you drag it somewhere else.
 enum Corner: String, CaseIterable, Identifiable {
     case bottomLeft, bottomRight
 
@@ -48,8 +50,8 @@ enum Corner: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .bottomLeft: "Bottom left"
-        case .bottomRight: "Bottom right"
+        case .bottomLeft: "Left side"
+        case .bottomRight: "Right side"
         }
     }
 }

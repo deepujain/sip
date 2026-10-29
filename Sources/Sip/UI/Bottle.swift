@@ -31,6 +31,8 @@ struct BottleView: View, Animatable {
     }
     var animated = true
     var warning = false
+    /// Follow the Mac's tilt and movement.
+    var sloshes = false
 
     /// Image rendering can't draw a timeline, so snapshots draw the water still.
     nonisolated(unsafe) static var drawsStill = false
@@ -40,11 +42,12 @@ struct BottleView: View, Animatable {
     var body: some View {
         Group {
             if animated && !Self.drawsStill {
-                TimelineView(.animation(minimumInterval: 1 / 20)) { context in
-                    canvas(phase: context.date.timeIntervalSinceReferenceDate * 1.7)
+                TimelineView(.animation(minimumInterval: sloshes ? 1 / 30 : 1 / 20)) { context in
+                    canvas(phase: context.date.timeIntervalSinceReferenceDate * 1.7,
+                           tilt: sloshes ? Slosh.shared.tilt : 0, agitation: sloshes ? Slosh.shared.agitation : 0)
                 }
             } else {
-                canvas(phase: 0.8)
+                canvas(phase: 0.8, tilt: 0, agitation: 0)
             }
         }
         .aspectRatio(Self.aspect, contentMode: .fit)
@@ -52,13 +55,14 @@ struct BottleView: View, Animatable {
         .accessibilityLabel(Text("Bottle \(Int((level * 100).rounded())) percent full"))
     }
 
-    private func canvas(phase: Double) -> some View {
+    private func canvas(phase: Double, tilt: Double, agitation: Double) -> some View {
         Canvas { context, size in
-            Self.draw(in: &context, size: size, level: level, phase: phase, warning: warning)
+            Self.draw(in: &context, size: size, level: level, phase: phase, warning: warning, tilt: tilt, agitation: agitation)
         }
     }
 
-    private static func draw(in context: inout GraphicsContext, size: CGSize, level: Double, phase: Double, warning: Bool) {
+    private static func draw(in context: inout GraphicsContext, size: CGSize, level: Double, phase: Double, warning: Bool,
+                             tilt: Double, agitation: Double) {
         let rect = CGRect(origin: .zero, size: size)
         let width = size.width, height = size.height
         let outline = BottleShape().path(in: rect)
@@ -72,11 +76,15 @@ struct BottleView: View, Animatable {
             var water = context
             water.clip(to: outline)
             let top = height * (0.985 - CGFloat(fill) * 0.785)
-            let wave = height * 0.012 * CGFloat(min(1, fill * 8))
+            let wave = height * 0.012 * CGFloat(min(1, fill * 8)) * (1 + CGFloat(agitation) * 3)
+            let slope = CGFloat(tan(tilt))
+            func surfaceY(_ step: CGFloat) -> CGFloat {
+                top + slope * (width * step - width / 2) + sin(phase * (1 + agitation) + Double(step) * .pi * 2.4) * wave
+            }
             var surface = Path()
             surface.move(to: CGPoint(x: 0, y: height))
             for step in stride(from: CGFloat(0), through: 1, by: 0.02) {
-                surface.addLine(to: CGPoint(x: width * step, y: top + sin(phase + Double(step) * .pi * 2.4) * wave))
+                surface.addLine(to: CGPoint(x: width * step, y: surfaceY(step)))
             }
             surface.addLine(to: CGPoint(x: width, y: height))
             surface.closeSubpath()
@@ -87,7 +95,7 @@ struct BottleView: View, Animatable {
                                                       startPoint: CGPoint(x: 0, y: top), endPoint: CGPoint(x: 0, y: height)))
             var foam = Path()
             for step in stride(from: CGFloat(0), through: 1, by: 0.02) {
-                let point = CGPoint(x: width * step, y: top + sin(phase + Double(step) * .pi * 2.4) * wave)
+                let point = CGPoint(x: width * step, y: surfaceY(step))
                 step == 0 ? foam.move(to: point) : foam.addLine(to: point)
             }
             water.stroke(foam, with: .color(.white.opacity(0.55)), lineWidth: max(0.5, width * 0.02))

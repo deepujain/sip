@@ -256,7 +256,7 @@ struct SettingsView: View {
     let model: WaterModel
     @AppStorage(Prefs.lockMinutes) private var lockMinutes = 15
     @AppStorage(Prefs.graceMinutes) private var graceMinutes = 10
-    @AppStorage(Prefs.corner) private var corner = Corner.bottomLeft.rawValue
+    @AppStorage(Prefs.corner) private var corner = Corner.bottomRight.rawValue
     @AppStorage(Prefs.showInDock) private var showInDock = true
 
     var body: some View {
@@ -268,9 +268,10 @@ struct SettingsView: View {
                     .tracking(0.8)
                     .foregroundStyle(.tertiary)
                 HStack(spacing: 6) {
-                    Text("Corner").font(.system(size: 12, weight: .medium)).frame(width: 110, alignment: .leading)
+                    Text("Place it on").font(.system(size: 12, weight: .medium)).frame(width: 110, alignment: .leading)
                     ForEach(Corner.allCases) { option in
                         Button {
+                            UserDefaults.standard.removeObject(forKey: Prefs.deskOrigin)
                             corner = option.rawValue
                         } label: {
                             Text(option.title)
@@ -283,6 +284,9 @@ struct SettingsView: View {
                         }
                         .buttonStyle(PressableStyle())
                     }
+                    Text("or drag it anywhere")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 HStack(spacing: 6) {
                     Text("Dock icon").font(.system(size: 12, weight: .medium)).frame(width: 110, alignment: .leading)

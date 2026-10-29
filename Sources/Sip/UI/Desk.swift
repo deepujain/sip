@@ -51,20 +51,27 @@ final class FloatingHost<Content: View>: NSHostingView<Content> {
 /// Your bottle, standing in a bottom corner of the screen. The water shows how much should be left right now.
 struct DeskView: View {
     let model: WaterModel
+    /// Called while the bottle is dragged (`false`) and when it's let go (`true`).
+    var onDrag: (Bool) -> Void = { _ in }
     static let size = CGSize(width: 200, height: 236)
 
     private var late: Bool { model.phase == .due || model.phase == .overdue }
-    private var alignment: HorizontalAlignment { model.corner == .bottomLeft ? .leading : .trailing }
+    private var alignment: HorizontalAlignment { model.deskOnLeft ? .leading : .trailing }
 
     var body: some View {
         VStack(alignment: alignment, spacing: 6) {
             Spacer(minLength: 0)
             ZStack(alignment: .bottom) {
-                BottleView(level: model.deskLevel, warning: late)
+                BottleView(level: model.deskLevel, warning: late, sloshes: true)
                     .animation(.spring(duration: 0.9, bounce: 0.25), value: model.deskLevel)
                     .frame(height: 124)
                     .shadow(color: .black.opacity(0.28), radius: 8, y: 5)
                     .scaleEffect(model.deskHover ? 1.04 : 1, anchor: .bottom)
+                    .contentShape(Rectangle())
+                    .gesture(DragGesture(minimumDistance: 2, coordinateSpace: .global)
+                        .onChanged { _ in onDrag(false) }
+                        .onEnded { _ in onDrag(true) })
+                    .help(Text("Drag to move the bottle"))
                 if model.deskHover, model.current != nil {
                     Button {
                         model.finishBottle()
@@ -107,7 +114,7 @@ struct DeskView: View {
                 .padding(.top, 2)
                 .help(Text("\(model.doneCount) of \(model.plan.bottleCount) bottles today"))
             }
-            .multilineTextAlignment(model.corner == .bottomLeft ? .leading : .trailing)
+            .multilineTextAlignment(model.deskOnLeft ? .leading : .trailing)
             .lineLimit(2)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 10)
@@ -117,7 +124,7 @@ struct DeskView: View {
             .animation(.easeInOut(duration: 0.3), value: model.deskCaption)
         }
         .padding(.horizontal, 4)
-        .frame(width: Self.size.width, height: Self.size.height, alignment: model.corner == .bottomLeft ? .bottomLeading : .bottomTrailing)
+        .frame(width: Self.size.width, height: Self.size.height, alignment: model.deskOnLeft ? .bottomLeading : .bottomTrailing)
     }
 }
 
@@ -125,12 +132,15 @@ struct DeskView: View {
 final class DeskController {
     private let model: WaterModel
     private let panel = FloatingPanel(title: "Sip Bottle")
+    private var dragStart: (mouse: CGPoint, origin: CGPoint)?
+    private var lastDrag: (point: CGPoint, time: TimeInterval, velocity: Double)?
 
     init(model: WaterModel) {
         self.model = model
-        let host = FloatingHost(rootView: DeskView(model: model))
+        let host = FloatingHost(rootView: DeskView(model: model) { _ in })
         host.sizingOptions = []
         host.onHover = { [weak model] inside in model?.deskHover = inside }
+        host.rootView = DeskView(model: model) { [weak self] ended in self?.drag(ended: ended) }
         panel.contentView = host
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.layout() }
@@ -152,11 +162,63 @@ final class DeskController {
             panel.orderOut(nil)
             return
         }
-        let area = screen.visibleFrame
-        let size = DeskView.size
-        let x = corner == .bottomLeft ? area.minX + 12 : area.maxX - size.width - 12
-        panel.setFrame(NSRect(x: x, y: area.minY + 12, width: size.width, height: size.height), display: true)
+        panel.setFrame(NSRect(origin: clamp(savedOrigin ?? defaultOrigin(corner, on: screen)), size: DeskView.size), display: true)
+        updateSide()
         panel.orderFrontRegardless()
     }
-}
 
+    /// On the right, high enough to clear anything living in the bottom-right corner.
+    private func defaultOrigin(_ corner: Corner, on screen: NSScreen) -> CGPoint {
+        let area = screen.visibleFrame
+        let size = DeskView.size
+        return corner == .bottomLeft
+            ? CGPoint(x: area.minX + 12, y: area.minY + 12)
+            : CGPoint(x: area.maxX - size.width - 12, y: area.minY + 290)
+    }
+
+    private var savedOrigin: CGPoint? {
+        guard let values = UserDefaults.standard.array(forKey: Prefs.deskOrigin) as? [Double], values.count == 2 else { return nil }
+        return CGPoint(x: values[0], y: values[1])
+    }
+
+    /// Keeps the bottle on a screen that's still attached.
+    private func clamp(_ origin: CGPoint) -> CGPoint {
+        let size = DeskView.size
+        let frame = NSRect(origin: origin, size: size)
+        let screen = NSScreen.screens.first { $0.visibleFrame.intersects(frame) } ?? NSScreen.main ?? NSScreen.screens.first
+        guard let area = screen?.visibleFrame else { return origin }
+        return CGPoint(x: min(max(origin.x, area.minX - 40), area.maxX - size.width + 40),
+                       y: min(max(origin.y, area.minY - 40), area.maxY - size.height))
+    }
+
+    private func updateSide() {
+        let screen = panel.screen ?? NSScreen.main
+        let onLeft = panel.frame.midX < (screen?.frame.midX ?? 0)
+        if model.deskOnLeft != onLeft { model.deskOnLeft = onLeft }
+    }
+
+    private func drag(ended: Bool) {
+        let mouse = NSEvent.mouseLocation
+        if ended {
+            dragStart = nil
+            lastDrag = nil
+            let origin = clamp(panel.frame.origin)
+            panel.setFrameOrigin(origin)
+            UserDefaults.standard.set([Double(origin.x), Double(origin.y)], forKey: Prefs.deskOrigin)
+            updateSide()
+            return
+        }
+        if dragStart == nil { dragStart = (mouse, panel.frame.origin) }
+        guard let start = dragStart else { return }
+        panel.setFrameOrigin(CGPoint(x: start.origin.x + mouse.x - start.mouse.x, y: start.origin.y + mouse.y - start.mouse.y))
+        // Moving the bottle sideways makes the water lag behind, like carrying a real one.
+        let now = ProcessInfo.processInfo.systemUptime
+        if let last = lastDrag, now - last.time > 0.001 {
+            let velocity = Double(mouse.x - last.point.x) / (now - last.time)
+            Slosh.shared.kick((velocity - last.velocity) * 0.0009)
+            lastDrag = (mouse, now, velocity)
+        } else {
+            lastDrag = (mouse, now, 0)
+        }
+    }
+}
