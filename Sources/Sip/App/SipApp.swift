@@ -53,8 +53,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var welcomeWindow: NSWindow?
     private var benefitsWindow: NSWindow?
 
+    private var todayWindow: NSWindow?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
+        applyDockPolicy()
+        NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.applyDockPolicy() }
+        }
         model.start()
         desk = DeskController(model: model)
         nudges = NudgeController(model: model)
@@ -66,6 +71,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         NSApp.presentationOptions = []
+    }
+
+    /// Clicking the Dock icon opens today's bottles, for when the menu bar is too full to show Sip's drop.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showToday()
+        return false
+    }
+
+    private func applyDockPolicy() {
+        let policy: NSApplication.ActivationPolicy = UserDefaults.standard.bool(forKey: Prefs.showInDock) ? .regular : .accessory
+        if NSApp.activationPolicy() != policy { NSApp.setActivationPolicy(policy) }
+    }
+
+    func showToday() {
+        if todayWindow == nil {
+            let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+                                  backing: .buffered, defer: false)
+            window.titlebarAppearsTransparent = true
+            window.titleVisibility = .hidden
+            window.isMovableByWindowBackground = true
+            window.isReleasedWhenClosed = false
+            window.title = "Sip"
+            window.contentView = NSHostingView(rootView: MenuContent(model: model, showWelcome: { [weak self] in self?.showWelcome() },
+                                                                     showBenefits: { [weak self] in self?.showBenefits() })
+                .padding(.top, 14))
+            window.center()
+            todayWindow = window
+        }
+        NSApp.activate()
+        todayWindow?.makeKeyAndOrderFront(nil)
     }
 
     func showWelcome() {

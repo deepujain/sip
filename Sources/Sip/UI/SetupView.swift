@@ -257,6 +257,7 @@ struct SettingsView: View {
     @AppStorage(Prefs.lockMinutes) private var lockMinutes = 15
     @AppStorage(Prefs.graceMinutes) private var graceMinutes = 10
     @AppStorage(Prefs.corner) private var corner = Corner.bottomLeft.rawValue
+    @AppStorage(Prefs.showInDock) private var showInDock = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -278,6 +279,23 @@ struct SettingsView: View {
                                 .padding(.vertical, 5)
                                 .foregroundStyle(corner == option.rawValue ? Color.white : Color.primary)
                                 .background(corner == option.rawValue ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary.opacity(0.6)),
+                                            in: Capsule())
+                        }
+                        .buttonStyle(PressableStyle())
+                    }
+                }
+                HStack(spacing: 6) {
+                    Text("Dock icon").font(.system(size: 12, weight: .medium)).frame(width: 110, alignment: .leading)
+                    ForEach([true, false], id: \.self) { option in
+                        Button {
+                            showInDock = option
+                        } label: {
+                            Text(option ? "Show" : "Menu bar only")
+                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 5)
+                                .foregroundStyle(showInDock == option ? Color.white : Color.primary)
+                                .background(showInDock == option ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary.opacity(0.6)),
                                             in: Capsule())
                         }
                         .buttonStyle(PressableStyle())

@@ -17,6 +17,7 @@ enum Prefs {
     static let hasOnboarded = "hasOnboarded"
     static let history = "history"
     static let corner = "corner"
+    static let showInDock = "showInDock"
 
     static func register() {
         UserDefaults.standard.register(defaults: [
@@ -34,6 +35,7 @@ enum Prefs {
             lockMinutes: 15,
             graceMinutes: 10,
             corner: Corner.bottomLeft.rawValue,
+            showInDock: true,
         ])
     }
 }

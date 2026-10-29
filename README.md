@@ -73,7 +73,7 @@ If a bottle still isn’t empty 10 minutes after it’s due, every display goes 
 
 ### Menu bar
 
-Click the water drop in the menu bar to open a small panel:
+Click the water drop in the menu bar, or Sip’s icon in the Dock, to open a small panel. The Dock icon helps when a full menu bar hides the drop behind the camera notch; switch to **Menu bar only** in Settings if you don’t want it.
 
 - **Today.** Every bottle of the day: finished ones with the time you finished them, the current one draining, and the rest with their due times. The header shows how much you’ve drunk so far.
 - **Your plan.** Bottle size, daily goal, your day, and your streak of days in a row with the goal met. Click a tile to change it.
@@ -90,7 +90,7 @@ Click the water drop in the menu bar to open a small panel:
 2. Open the zip and drag **Sip.app** into your **Applications** folder.
 3. Open it. The app isn’t notarized by Apple yet, so the first time macOS says it can’t verify the developer. Open **System Settings › Privacy & Security**, scroll down, and click **Open Anyway**. You only need to do this once.
 
-Setup opens first. Pick your bottle, your goal, and your day, then click **Start**. The bottle appears in the bottom-left corner of the screen and a water drop appears in the menu bar. If you don’t see the drop, your menu bar may be full: hold **⌘** and drag other icons to make room, or check **System Settings › Menu Bar**. Sip needs no permissions.
+Setup opens first. Pick your bottle, your goal, and your day, then click **Start**. The bottle appears in the bottom-left corner of the screen, a water drop appears in the menu bar, and Sip’s icon appears in the Dock. If you don’t see the drop, your menu bar is full and macOS has hidden it behind the camera notch: click the Dock icon instead, or hold **⌘** and drag other menu bar icons to make room. Sip needs no permissions.
 
 Sip isn’t medical advice. If you have kidney or heart problems, or take water pills, ask your doctor how much to drink.
 
