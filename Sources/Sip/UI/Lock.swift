@@ -188,9 +188,12 @@ struct CapUnlock: View {
             ZStack {
                 BottleView(level: level, warning: true, cap: .off)
                 BottleView(level: level, animated: false, capTurn: turn, cap: .alone)
-                    // Slight wobble as it turns, a rise of a few threads, then it flies off.
-                    .rotationEffect(.degrees(hold.popped ? -40 : sin(turn * 40) * 1.5 * turn), anchor: .top)
-                    .offset(x: hold.popped ? -30 : 0, y: hold.popped ? -120 : -CGFloat(turn) * 16)
+                    // It climbs the thread for the whole hold, staying seated on the glass, and comes free right at the end.
+                    .visualEffect { content, proxy in
+                        content.offset(y: -CGFloat(turn) * proxy.size.height * BottleView.threadLength)
+                    }
+                    .rotationEffect(.degrees(hold.popped ? -40 : sin(turn * 40) * 1.2 * turn), anchor: .top)
+                    .offset(x: hold.popped ? -30 : 0, y: hold.popped ? -110 : 0)
                     .opacity(hold.popped ? 0 : 1)
                     .animation(.easeOut(duration: 0.5), value: hold.popped)
             }

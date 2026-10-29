@@ -140,12 +140,7 @@ struct BottleView: View, Animatable {
         let width = size.width, height = size.height
         let outline = BottleShape().path(in: rect)
 
-        // Screw threads on the neck, hidden under the cap until it's unscrewed.
-        for step in 0..<2 {
-            let y = height * (0.1 + CGFloat(step) * 0.006)
-            context.stroke(Path { $0.move(to: CGPoint(x: width * 0.36, y: y + height * 0.003)); $0.addLine(to: CGPoint(x: width * 0.64, y: y)) },
-                           with: .color(.white.opacity(0.55)), lineWidth: max(0.6, width * 0.014))
-        }
+        drawMouth(in: &context, size: size)
 
         // Clear glass: whatever is behind shows through. A cylinder catches light at its edges, not its middle.
         let across = { (stops: [Gradient.Stop]) in
@@ -222,6 +217,38 @@ struct BottleView: View, Animatable {
         // A dark rim and a bright one, so clear glass still reads on light and dark desktops alike.
         context.stroke(outline, with: .color(Color(red: 0.1, green: 0.16, blue: 0.28).opacity(0.38)), lineWidth: max(1, width * 0.024))
         context.stroke(outline, with: .color(.white.opacity(0.75)), lineWidth: max(0.5, width * 0.009))
+    }
+
+    /// How far the cap rises from closed to free: the length of the threaded neck under it.
+    static let threadLength: CGFloat = 0.094
+
+    /// The threaded glass neck and rounded lip the cap screws onto, hidden under it until it's unscrewed.
+    private static func drawMouth(in context: inout GraphicsContext, size: CGSize) {
+        let width = size.width, height = size.height
+        let dark = Color(red: 0.1, green: 0.16, blue: 0.28).opacity(0.38)
+        let neck = Path(CGRect(x: width * 0.355, y: height * 0.03, width: width * 0.29, height: height * 0.08))
+        context.fill(neck, with: .linearGradient(
+            Gradient(stops: [.init(color: .white.opacity(0.3), location: 0), .init(color: .white.opacity(0.05), location: 0.35),
+                             .init(color: .white.opacity(0.05), location: 0.7), .init(color: .white.opacity(0.25), location: 1)]),
+            startPoint: CGPoint(x: width * 0.355, y: 0), endPoint: CGPoint(x: width * 0.645, y: 0)))
+        context.stroke(neck, with: .color(dark), lineWidth: max(1, width * 0.02))
+        context.stroke(neck, with: .color(.white.opacity(0.7)), lineWidth: max(0.5, width * 0.008))
+        // The thread winds around the neck, so each turn shows as a slanted ridge.
+        for step in 0..<4 {
+            let y = height * (0.052 + CGFloat(step) * 0.014)
+            context.stroke(Path { $0.move(to: CGPoint(x: width * 0.355, y: y + height * 0.006)); $0.addLine(to: CGPoint(x: width * 0.645, y: y)) },
+                           with: .color(.white.opacity(0.6)), lineWidth: max(0.8, width * 0.016))
+        }
+        // A ring where the neck meets the bottle, and a rounded lip with the opening at the top.
+        let ring = Path(roundedRect: CGRect(x: width * 0.335, y: height * 0.098, width: width * 0.33, height: height * 0.014), cornerRadius: width * 0.02)
+        context.fill(ring, with: .color(.white.opacity(0.3)))
+        context.stroke(ring, with: .color(dark), lineWidth: max(0.6, width * 0.01))
+        let lip = Path(roundedRect: CGRect(x: width * 0.34, y: height * 0.022, width: width * 0.32, height: height * 0.018), cornerRadius: height * 0.009)
+        context.fill(lip, with: .color(.white.opacity(0.35)))
+        context.stroke(lip, with: .color(dark), lineWidth: max(0.6, width * 0.012))
+        context.stroke(lip, with: .color(.white.opacity(0.85)), lineWidth: max(0.5, width * 0.007))
+        context.fill(Path(ellipseIn: CGRect(x: width * 0.38, y: height * 0.026, width: width * 0.24, height: height * 0.008)),
+                     with: .color(Color(red: 0.05, green: 0.1, blue: 0.2).opacity(0.5)))
     }
 
     /// A ribbed navy screw cap with a rolled lip. Turning it slides the ribs across, like a real one spinning.
