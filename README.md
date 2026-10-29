@@ -20,7 +20,7 @@ You know you should drink more water. You fill your bottle in the morning, and a
 **Sip** turns your daily water into a few bottles, each with a time to finish it. A bottle stands on your screen and fills up as you finish your real bottles, so you can see at a glance how much you’ve had today. If you haven’t finished a bottle well past its time, the screen locks for a short water break until you do.
 
 <p align="center">
-  <img src="docs/images/desk.png" width="220" alt="Hovering over the bottle on the screen, a quarter full after one of four bottles: a Finished button, a “Bottle 2 of 4 · finish by 2:00 PM” caption, today’s total, and a row of four small bottles">
+  <img src="docs/images/desk.png" width="220" alt="Hovering over the bottle on the screen, a quarter full after one of four bottles: a “Drank it” button, a “Bottle 2 of 4 · finish by 2:00 PM” caption, today’s total, and a row of four small bottles">
   &nbsp;&nbsp;
   <img src="docs/images/desk-done.png" width="220" alt="The bottle half full after finishing two of four, with the caption “Bottle 2 done · helps keep headaches away” and two of the four small bottles filled in">
 </p>
@@ -40,7 +40,7 @@ You know you should drink more water. You fill your bottle in the morning, and a
 
 ### Reminders that get firmer
 
-- **The bottle fills with your day.** Sip can’t see your real bottle, so it doesn’t guess. When you empty yours, hover over the bottle on screen and click **Finished**. The water rises by one bottle toward today’s goal (with four bottles, each one fills it a quarter). Only the bottle stays on screen. Hover over it to see which bottle you’re on, when to finish it, and today’s total. The menu bar panel can undo a click.
+- **The bottle fills with your day.** Sip can’t see your real bottle, so it doesn’t guess. When you empty yours, hover over the bottle on screen and click **Drank it**. The water rises by one bottle toward today’s goal (with four bottles, each one fills it a quarter). Only the bottle stays on screen. Hover over it to see which bottle you’re on, when to finish it, and today’s total. The menu bar panel can undo a click.
 - **Water you can tilt.** On a MacBook, the water stays level as you tilt the laptop, sloshes when you bump it, open or close the lid, or drag the bottle across the screen, and splashes when a bottle refills. Sip reads the built-in accelerometer and lid sensor, and needs no permission to do it.
 - **Put it anywhere.** Drag the bottle wherever you like and it stays there. It starts on the right side, above the bottom-right corner, so it doesn’t cover apps like Where’d It Go?. **Settings › Bottle on screen** puts it back on the left or right side.
 - **A nudge halfway through.** Halfway through each bottle, a small card slides in under the menu bar to say it should be about half gone. It goes away on its own.

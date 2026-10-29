@@ -78,7 +78,7 @@ struct DeskView: View {
                     Button {
                         model.finishBottle()
                     } label: {
-                        Label("Finished", systemImage: "checkmark")
+                        Label("Drank it", systemImage: "checkmark")
                             .font(.system(size: 11, weight: .semibold, design: .rounded))
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
