@@ -5,6 +5,7 @@ struct MenuContent: View {
     @Bindable var model: WaterModel
     let showWelcome: () -> Void
     let showBenefits: () -> Void
+    var showAbout: () -> Void = {}
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
@@ -139,6 +140,10 @@ struct MenuContent: View {
             FooterButton(symbol: "sparkles", title: "Set Up Your Bottle") {
                 closeMenu()
                 showWelcome()
+            }
+            FooterButton(symbol: "info.circle", title: "About Sip") {
+                closeMenu()
+                showAbout()
             }
             FooterButton(symbol: "gearshape", title: "Settings") { settings() }
                 .keyboardShortcut(",")

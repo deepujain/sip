@@ -52,6 +52,7 @@ enum Snapshots {
                     celebration: "Bottle 2 done · \(Benefit.pick(at: slots[2].start, bottle: 1).short)")
         try live(AnyView(DeskView(model: model).padding(30).background(Color(white: 0.95))), to: folder.appending(path: "live-desk-done.png"))
         try live(AnyView(BenefitsView().background(Color(nsColor: .windowBackgroundColor))), to: folder.appending(path: "live-benefits.png"))
+        try live(AnyView(AboutView().background(Color(nsColor: .windowBackgroundColor))), to: folder.appending(path: "live-about.png"))
         BottleView.drawsStill = true
         model.stage(now: due.addingTimeInterval(700), done: 1, locked: true)
         try live(AnyView(LockView(model: model, primary: true).frame(width: 1280, height: 860)), to: folder.appending(path: "live-lock.png"))

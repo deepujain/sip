@@ -57,7 +57,8 @@ struct SipApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            MenuContent(model: appDelegate.model, showWelcome: appDelegate.showWelcome, showBenefits: appDelegate.showBenefits)
+            MenuContent(model: appDelegate.model, showWelcome: appDelegate.showWelcome, showBenefits: appDelegate.showBenefits,
+                        showAbout: appDelegate.showAbout)
         } label: {
             Image(systemName: appDelegate.model.menuSymbol)
                 .accessibilityLabel(Text("Sip"))
@@ -78,6 +79,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var lock: LockController?
     private var welcomeWindow: NSWindow?
     private var benefitsWindow: NSWindow?
+    private var aboutWindow: NSWindow?
 
     private var todayWindow: NSWindow?
     private let motion = MotionSensors()
@@ -128,7 +130,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.isReleasedWhenClosed = false
             window.title = "Sip"
             window.contentView = NSHostingView(rootView: MenuContent(model: model, showWelcome: { [weak self] in self?.showWelcome() },
-                                                                     showBenefits: { [weak self] in self?.showBenefits() })
+                                                                     showBenefits: { [weak self] in self?.showBenefits() },
+                                                                     showAbout: { [weak self] in self?.showAbout() })
                 .padding(.top, 14))
             window.center()
             todayWindow = window
@@ -174,4 +177,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate()
         benefitsWindow?.makeKeyAndOrderFront(nil)
     }
+
+    func showAbout() {
+        if aboutWindow == nil {
+            let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+                                  backing: .buffered, defer: false)
+            window.titlebarAppearsTransparent = true
+            window.isMovableByWindowBackground = true
+            window.isReleasedWhenClosed = false
+            window.title = "About Sip"
+            window.contentView = NSHostingView(rootView: AboutView())
+            window.center()
+            aboutWindow = window
+        }
+        NSApp.activate()
+        aboutWindow?.makeKeyAndOrderFront(nil)
+    }
+}
+
+enum AppLinks {
+    static let website = URL(string: "https://1xaispark.com/apps/sip.html")!
+}
+
+extension Bundle {
+    var shortVersion: String { object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0" }
+    var buildNumber: String { object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1" }
+    var copyright: String { object(forInfoDictionaryKey: "NSHumanReadableCopyright") as? String ?? "© 2026 1xAI" }
 }
