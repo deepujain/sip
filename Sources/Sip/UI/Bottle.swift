@@ -101,17 +101,9 @@ struct BottleView: View, Animatable {
                 canvas(phase: 0.8, tilt: 0, agitation: 0)
             }
         }
-        .background { if sloshes { refraction } }
         .aspectRatio(Self.aspect, contentMode: .fit)
         .accessibilityElement()
         .accessibilityLabel(Text("Bottle \(Int((level * 100).rounded())) percent full"))
-    }
-
-    /// Clear Liquid Glass in the bottle's shape bends whatever sits behind the bottle on screen.
-    @ViewBuilder private var refraction: some View {
-        if #available(macOS 26, *) {
-            Color.clear.glassEffect(.clear, in: BottleShape())
-        }
     }
 
     private func canvas(phase: Double, tilt: Double, agitation: Double) -> some View {
