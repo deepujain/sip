@@ -37,6 +37,12 @@ struct SipApp: App {
             }
         }
         #endif
+        // Without a saved position macOS adds the icon at the far left of the
+        // status items, which is behind the notch on MacBooks with a full menu bar.
+        let position = "NSStatusItem Preferred Position Item-0"
+        if UserDefaults.standard.object(forKey: position) == nil {
+            UserDefaults.standard.set(250, forKey: position)
+        }
     }
 
     var body: some Scene {

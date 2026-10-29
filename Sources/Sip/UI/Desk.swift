@@ -48,7 +48,7 @@ final class FloatingHost<Content: View>: NSHostingView<Content> {
     }
 }
 
-/// Your bottle, standing in a bottom corner of the screen. The water shows how much should be left right now.
+/// Your bottle on the screen. The water shows how much you've had today.
 struct DeskView: View {
     let model: WaterModel
     /// Called while the bottle is dragged (`false`) and when it's let go (`true`).

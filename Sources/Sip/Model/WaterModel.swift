@@ -147,18 +147,14 @@ final class WaterModel {
         graceUntil ?? slot.end.addingTimeInterval(Double(graceMinutes) * 60)
     }
 
-    /// How full a bottle should look right now: finished ones are empty, the current one drains on schedule.
+    /// Sip can't see the real bottle, so a bottle is full once you say you finished it.
     func level(of slot: Slot) -> Double {
-        if slot.index < doneCount { return 0 }
-        if slot.index > doneCount { return 1 }
-        guard now > slot.start else { return 1 }
-        // Past due, a little is left, so it never looks like a finished bottle.
-        return max(0.12, 1 - now.timeIntervalSince(slot.start) / slot.duration)
+        slot.index < doneCount ? 1 : 0
     }
 
+    /// Today's progress: the desk bottle fills as you finish bottles.
     var deskLevel: Double {
-        guard let slot = current else { return 1 }
-        return level(of: slot)
+        min(1, Double(drankML) / Double(plan.goalML))
     }
 
     var headline: String {
@@ -232,13 +228,9 @@ final class WaterModel {
 
     /// What the water in the bottle means right now, in plain words.
     var deskHint: String {
+        let total = "Water shows today’s total: \(Fmt.liters(drankML)) of \(Fmt.liters(plan.goalML))."
         switch phase {
-        case .ahead: return "You’re ahead. Drink at your own pace."
-        case .onPace:
-            let left = Int((deskLevel * 100 / 25).rounded()) * 25
-            return left >= 100 ? "Water shows what should be left. Start sipping."
-                : left <= 0 ? "Water shows what should be left. Nearly done."
-                : "Water shows what should be left: about \(left)%."
+        case .ahead, .onPace: return total
         case .due, .overdue: return "Finish this bottle to stop the reminders."
         default: return ""
         }
