@@ -89,7 +89,7 @@ struct DeskView: View {
                     .buttonStyle(.plain)
                     .padding(.bottom, 14)
                     .transition(.scale(scale: 0.8).combined(with: .opacity))
-                    .help(Text("I finished this bottle. Start the next one."))
+                    .help(Text("I drank this bottle. Start the next one."))
                 }
             }
             .frame(width: 90)
