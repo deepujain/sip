@@ -202,7 +202,7 @@ final class DeskController {
     private var dragStart: (mouse: CGPoint, origin: CGPoint)?
     private var lastDrag: (point: CGPoint, time: TimeInterval, velocity: Double)?
     private var collapseTimer: Timer?
-    private static let collapseAfter: TimeInterval = 10
+    private static let collapseAfter: TimeInterval = 5
 
     init(model: WaterModel) {
         self.model = model

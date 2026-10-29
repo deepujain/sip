@@ -321,7 +321,7 @@ final class WaterModel {
         celebration = doneCount >= plan.bottleCount
             ? "Goal reached · \(Fmt.liters(drankML)) today"
             : "Bottle \(finished.number) done · \(Benefit.pick(at: at, bottle: finished.index).short)"
-        celebrationExpires = at.addingTimeInterval(12)
+        celebrationExpires = at.addingTimeInterval(5)
         graceUntil = nil
         dismissNudge()
         if isLocked { endLock(finished: true) }
