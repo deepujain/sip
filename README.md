@@ -55,7 +55,7 @@ You know you should drink more water. You fill your bottle in the morning, and a
 If a bottle still isn’t empty 10 minutes after it’s due, every display goes behind frosted glass for 15 minutes. The Dock and menu bar hide and app switching is off. One click on **Bottle’s empty** ends it right away. If the time runs out and the bottle still isn’t finished, the lock comes back 20 minutes later.
 
 - **Never at a bad moment.** Sip doesn’t lock while your camera or microphone is in use, while you’re away from the Mac (screen locked, asleep, or five minutes without a key press or mouse move), or in the hour before bed. Time away doesn’t count against you.
-- **Always a way out.** Hold the bottom of the lock screen for three seconds to unlock in an emergency.
+- **Always a way out.** On any display, hold the bottom of the lock screen for three seconds, or press **Esc** three times, to unlock in an emergency; that bottle won’t lock your Mac again. The lock also ends on time on its own, and if Sip ever stops responding while the screen is covered, it quits itself so the cover goes away.
 - **Your rules.** Choose a 5 to 20 minute lock and a 5 to 30 minute grace period after a bottle is due, or turn the Dry Spell off and keep just the reminders. **Settings › Try it for 20 seconds** shows you what it looks like.
 
 <p align="center">

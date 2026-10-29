@@ -1,4 +1,5 @@
 import AppKit
+import os
 import SwiftUI
 
 /// The Dry Spell: every display goes behind frosted glass until the bottle is empty or the time runs out.
@@ -70,8 +71,11 @@ struct LockView: View {
                 model.finishBottle()
             }
             .keyboardShortcut(.return)
-            EmergencyHold { model.endLock(finished: false) }
+            EmergencyHold { model.endLock(finished: false, emergency: true) }
                 .padding(.top, 6)
+            Text("Or press Esc three times")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.45))
         }
         .foregroundStyle(.white)
         .padding(40)
@@ -106,7 +110,7 @@ private struct Countdown: View {
     }
 }
 
-/// Always a way out: hold for three seconds. The bottle comes back later if it's still full.
+/// Always a way out: hold for three seconds. That bottle won't lock the Mac again.
 private struct EmergencyHold: View {
     let action: () -> Void
     private let progressState = State(initialValue: 0.0)
@@ -169,11 +173,60 @@ private final class LockWindow: NSWindow {
     override var canBecomeMain: Bool { true }
 }
 
+/// Answers the very first click, even if macOS hasn't brought Sip to the front, so the way out always works.
+private final class LockHost<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+}
+
+/// If Sip ever freezes while the screen is covered, nothing inside it can lift the cover, so a separate
+/// thread quits the app instead. When the process ends, macOS removes its windows from every screen.
+final class LockWatchdog: @unchecked Sendable {
+    private let beat = OSAllocatedUnfairLock(initialState: Date())
+    private let armed = OSAllocatedUnfairLock(initialState: false)
+    private let queue = DispatchQueue(label: "app.sip.lock-watchdog")
+    private var source: DispatchSourceTimer?
+    private let limit: TimeInterval
+
+    init(limit: TimeInterval = 20) {
+        self.limit = limit
+        let source = DispatchSource.makeTimerSource(queue: queue)
+        source.schedule(deadline: .now() + 2, repeating: 2)
+        source.setEventHandler { [weak self] in self?.check() }
+        source.resume()
+        self.source = source
+    }
+
+    /// Called from the main thread while it's healthy.
+    func heartbeat() { beat.withLock { $0 = Date() } }
+
+    func arm(_ on: Bool) {
+        heartbeat()
+        armed.withLock { $0 = on }
+    }
+
+    private var lastCheck = Date()
+
+    private func check() {
+        let now = Date()
+        defer { lastCheck = now }
+        guard armed.withLock({ $0 }) else { return }
+        // A long gap between checks means the Mac was asleep, not that Sip froze; give it a fresh start.
+        if now.timeIntervalSince(lastCheck) > 6 { return heartbeat() }
+        if now.timeIntervalSince(beat.withLock { $0 }) > limit { _exit(3) }
+    }
+}
+
 @MainActor
 final class LockController {
     private let model: WaterModel
     private var windows: [NSWindow] = []
     private var resignObserver: NSObjectProtocol?
+    /// Ends the lock on time even if the model's clock stalls; runs in every run loop mode.
+    private var deadline: Timer?
+    private var pulse: Timer?
+    private var keys: Any?
+    private var escapes: [Date] = []
+    private let watchdog = LockWatchdog()
 
     init(model: WaterModel) {
         self.model = model
@@ -190,16 +243,37 @@ final class LockController {
     private func lock() {
         guard windows.isEmpty else { return }
         let main = NSScreen.main ?? NSScreen.screens.first
+        // Every display gets the buttons, so the way out is wherever you're looking.
         for screen in NSScreen.screens {
             let window = LockWindow(screen: screen)
-            window.contentView = NSHostingView(rootView: LockView(model: model, primary: screen == main))
+            window.contentView = LockHost(rootView: LockView(model: model, primary: true))
             window.setFrame(screen.frame, display: true)
             window.alphaValue = 0
             window.orderFrontRegardless()
             windows.append(window)
         }
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         windows.first { $0.screen == main }?.makeKeyAndOrderFront(nil)
+        if let until = model.lockedUntil {
+            let timer = Timer(fire: until.addingTimeInterval(1), interval: 0, repeats: false) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    guard let self, self.model.isLocked else { return }
+                    self.model.endLock(finished: false)
+                }
+            }
+            RunLoop.main.add(timer, forMode: .common)
+            deadline = timer
+        }
+        let watchdog = watchdog
+        let pulse = Timer(timeInterval: 1, repeats: true) { _ in watchdog.heartbeat() }
+        RunLoop.main.add(pulse, forMode: .common)
+        self.pulse = pulse
+        watchdog.arm(true)
+        keys = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard event.keyCode == 53 else { return event }
+            MainActor.assumeIsolated { self?.escapePressed() }
+            return nil
+        }
         NSApp.presentationOptions = [.hideDock, .hideMenuBar, .disableProcessSwitching, .disableHideApplication]
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.6
@@ -209,14 +283,30 @@ final class LockController {
         resignObserver = NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self, !self.windows.isEmpty else { return }
-                NSApp.activate(ignoringOtherApps: true)
+                NSApp.activate()
                 self.windows.forEach { $0.orderFrontRegardless() }
             }
         }
     }
 
+    private func escapePressed() {
+        let now = Date()
+        escapes = escapes.filter { now.timeIntervalSince($0) < 2 } + [now]
+        guard escapes.count >= 3 else { return }
+        escapes = []
+        model.endLock(finished: false, emergency: true)
+    }
+
     private func unlock() {
         guard !windows.isEmpty else { return }
+        deadline?.invalidate()
+        deadline = nil
+        watchdog.arm(false)
+        pulse?.invalidate()
+        pulse = nil
+        if let keys { NSEvent.removeMonitor(keys) }
+        keys = nil
+        escapes = []
         if let resignObserver { NotificationCenter.default.removeObserver(resignObserver) }
         resignObserver = nil
         NSApp.presentationOptions = []

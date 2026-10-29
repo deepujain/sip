@@ -27,6 +27,14 @@ struct SipApp: App {
             sensors.stop()
             exit(0)
         }
+        if arguments.contains("--watchdog-test") {
+            // Freezes the main thread with the watchdog armed; the process should end with status 3.
+            let watchdog = LockWatchdog(limit: 6)
+            watchdog.arm(true)
+            Thread.sleep(forTimeInterval: 20)
+            print("watchdog did not fire")
+            exit(1)
+        }
         if arguments.contains("--motion") {
             let sensors = MotionSensors()
             sensors.start()

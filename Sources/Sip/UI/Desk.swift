@@ -115,7 +115,7 @@ struct DeskView: View {
                 BottleView(level: model.deskLevel, warning: late, sloshes: true)
                     .animation(.spring(duration: 0.9, bounce: 0.25), value: model.deskLevel)
                     .frame(height: 124)
-                    .shadow(color: .black.opacity(0.28), radius: 8, y: 5)
+                    .shadow(color: .black.opacity(0.12), radius: 3, y: 2)
                     .scaleEffect(model.deskHover ? 1.04 : 1, anchor: .bottom)
                     .contentShape(Rectangle())
                     .gesture(drag)

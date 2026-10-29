@@ -354,13 +354,16 @@ final class WaterModel {
         play("Submarine")
     }
 
-    /// Ends the Dry Spell. If the bottle still isn't finished, it comes back after twice the grace period.
-    func endLock(finished: Bool) {
+    /// Ends the Dry Spell. If the bottle still isn't finished, it comes back after twice the grace period,
+    /// unless you used the emergency way out: then this bottle doesn't lock again.
+    func endLock(finished: Bool, emergency: Bool = false) {
         let wasPreview = previewLock
         lockedUntil = nil
         lockStarted = nil
         previewLock = false
-        if !finished, !wasPreview, current != nil {
+        if emergency {
+            graceUntil = nil
+        } else if !finished, !wasPreview, current != nil {
             graceUntil = Date().addingTimeInterval(Double(graceMinutes) * 120)
         }
     }
