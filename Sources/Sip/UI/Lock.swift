@@ -2,27 +2,35 @@ import AppKit
 import os
 import SwiftUI
 
-/// The Dry Spell: every display goes behind frosted glass until the bottle is empty or the time runs out.
+/// The Dry Spell: every display goes behind a clear blue tint, like looking through water, with one glass
+/// card in the middle, until the bottle is empty or the time runs out.
 struct LockView: View {
     let model: WaterModel
     let primary: Bool
     #if DEBUG
-    /// A still photo behind the frosted glass, for the website images.
+    /// A still photo behind the glass, for the website images.
     static var backdrop: AnyView?
     #endif
 
+    /// The card's natural size; smaller screens scale it down so nothing is ever cut off.
+    private static let card = CGSize(width: 860, height: 500)
+
     var body: some View {
         ZStack {
-            if BottleView.drawsStill {
-                Color(red: 0.16, green: 0.2, blue: 0.3)
-            } else {
-                Blur()
-            }
             #if DEBUG
             Self.backdrop
             #endif
-            Color.black.opacity(0.38)
-            if primary { content }
+            LinearGradient(colors: [Color(red: 0.05, green: 0.2, blue: 0.4).opacity(0.18),
+                                    Color(red: 0.05, green: 0.25, blue: 0.5).opacity(0.42)],
+                           startPoint: .top, endPoint: .bottom)
+            if primary {
+                GeometryReader { space in
+                    let scale = min(1, (space.size.width - 48) / Self.card.width, (space.size.height - 48) / Self.card.height)
+                    content
+                        .scaleEffect(scale)
+                        .frame(width: space.size.width, height: space.size.height)
+                }
+            }
         }
         .ignoresSafeArea()
     }
@@ -33,52 +41,87 @@ struct LockView: View {
     }
 
     private var content: some View {
-        VStack(spacing: 26) {
+        HStack(spacing: 48) {
             BottleView(level: model.previewLock ? 0.3 : 0.06, warning: true)
-                .frame(height: 300)
-                .shadow(color: .black.opacity(0.35), radius: 24, y: 12)
-            VStack(spacing: 8) {
-                Text(title)
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
-                Text(model.previewLock
-                     ? "When a bottle is still full past its time, your Mac takes a short water break like this one."
-                     : "Your Mac is taking a water break. It unlocks when the bottle is empty.")
-                    .font(.title3)
-                    .foregroundStyle(.white.opacity(0.75))
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 520)
-            }
-            let benefit = model.lockBenefit
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: benefit.symbol)
-                    .font(.system(size: 18, weight: .medium))
-                    .frame(width: 24)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(benefit.fact)
-                        .font(.system(size: 15, weight: .medium))
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(benefit.source)
+                .frame(height: 360)
+                .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(title)
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                    Text(model.previewLock
+                         ? "When a bottle is still full past its time, your Mac takes a short water break like this one."
+                         : "Your Mac is taking a water break. It unlocks when the bottle is empty.")
+                        .font(.title3)
+                        .foregroundStyle(.white.opacity(0.8))
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                benefit
+                HStack(spacing: 22) {
+                    Countdown(model: model)
+                    PillButton(title: model.previewLock ? "Got it" : "Bottle’s empty", prominent: true, large: true) {
+                        model.finishBottle()
+                    }
+                    .keyboardShortcut(.return)
+                }
+                HStack(alignment: .bottom, spacing: 16) {
+                    EmergencyHold { model.endLock(finished: false, emergency: true) }
+                    Text("or press Esc three times")
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.55))
+                        .padding(.bottom, 10)
                 }
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 14)
-            .frame(maxWidth: 520, alignment: .leading)
-            .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            Countdown(model: model)
-            PillButton(title: model.previewLock ? "Got it" : "Bottle’s empty", prominent: true, large: true) {
-                model.finishBottle()
-            }
-            .keyboardShortcut(.return)
-            EmergencyHold { model.endLock(finished: false, emergency: true) }
-                .padding(.top, 6)
-            Text("Or press Esc three times")
-                .font(.caption)
-                .foregroundStyle(.white.opacity(0.45))
+            .frame(width: 470, alignment: .leading)
         }
         .foregroundStyle(.white)
-        .padding(40)
+        .padding(.horizontal, 48)
+        .padding(.vertical, 40)
+        .frame(width: Self.card.width, height: Self.card.height)
+        .modifier(GlassCard())
+    }
+
+    private var benefit: some View {
+        let benefit = model.lockBenefit
+        return HStack(alignment: .top, spacing: 12) {
+            Image(systemName: benefit.symbol)
+                .font(.system(size: 18, weight: .medium))
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(benefit.fact)
+                    .font(.system(size: 15, weight: .medium))
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(benefit.source)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+/// Liquid Glass with a deep blue tint, so the screen behind shows through and white text stays readable.
+private struct GlassCard: ViewModifier {
+    private let shape = RoundedRectangle(cornerRadius: 36, style: .continuous)
+    private let tint = Color(red: 0.03, green: 0.12, blue: 0.26)
+
+    func body(content: Content) -> some View {
+        if BottleView.drawsStill {
+            // Image rendering can't draw glass or materials.
+            content
+                .background(tint.opacity(0.55), in: shape)
+                .overlay(shape.strokeBorder(.white.opacity(0.25)))
+        } else if #available(macOS 26, *) {
+            content.glassEffect(.regular.tint(tint.opacity(0.55)), in: shape)
+        } else {
+            content
+                .background(tint.opacity(0.6), in: shape)
+                .background(.ultraThinMaterial, in: shape)
+                .overlay(shape.strokeBorder(.white.opacity(0.2)))
+        }
     }
 }
 
@@ -142,18 +185,6 @@ private struct EmergencyHold: View {
             withAnimation(pressing ? .linear(duration: 3) : .easeOut(duration: 0.2)) { progress = pressing ? 1 : 0 }
         }
     }
-}
-
-private struct Blur: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = .fullScreenUI
-        view.blendingMode = .behindWindow
-        view.state = .active
-        return view
-    }
-
-    func updateNSView(_ view: NSVisualEffectView, context: Context) {}
 }
 
 private final class LockWindow: NSWindow {

@@ -70,7 +70,7 @@ enum Marketing {
     private static var output = URL(fileURLWithPath: ".")
 }
 
-private enum Photo: String {
+enum Photo: String {
     case hero, midday, afternoon, detail
 
     var image: Image {
@@ -80,7 +80,7 @@ private enum Photo: String {
 }
 
 /// A photograph filling the frame behind the real UI.
-private struct Backdrop: View {
+struct Backdrop: View {
     let photo: Photo
 
     var body: some View {

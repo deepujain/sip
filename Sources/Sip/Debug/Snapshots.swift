@@ -68,7 +68,12 @@ enum Snapshots {
         try live(AnyView(AboutView().background(Color(nsColor: .windowBackgroundColor))), to: folder.appending(path: "live-about.png"))
         BottleView.drawsStill = true
         model.stage(now: due.addingTimeInterval(700), done: 1, locked: true)
-        try live(AnyView(LockView(model: model, primary: true).frame(width: 1280, height: 860)), to: folder.appending(path: "live-lock.png"))
+        LockView.backdrop = AnyView(Backdrop(photo: .afternoon))
+        for (name, size) in [("live-lock", CGSize(width: 1470, height: 956)), ("live-lock-small", CGSize(width: 1024, height: 640))] {
+            try live(AnyView(LockView(model: model, primary: true).frame(width: size.width, height: size.height)),
+                     to: folder.appending(path: "\(name).png"))
+        }
+        LockView.backdrop = nil
     }
 
     /// Draws through a real window, the way the app shows it, instead of `ImageRenderer`.
