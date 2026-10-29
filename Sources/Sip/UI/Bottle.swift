@@ -42,7 +42,7 @@ struct BottleView: View, Animatable {
     var body: some View {
         Group {
             if animated && !Self.drawsStill {
-                TimelineView(.animation(minimumInterval: sloshes ? 1 / 30 : 1 / 20)) { context in
+                TimelineView(.animation(minimumInterval: sloshes ? 1 / 60 : 1 / 20)) { context in
                     canvas(phase: context.date.timeIntervalSinceReferenceDate * 1.7,
                            tilt: sloshes ? Slosh.shared.tilt : 0, agitation: sloshes ? Slosh.shared.agitation : 0)
                 }
@@ -76,10 +76,14 @@ struct BottleView: View, Animatable {
             var water = context
             water.clip(to: outline)
             let top = height * (0.985 - CGFloat(fill) * 0.785)
-            let wave = height * 0.012 * CGFloat(min(1, fill * 8)) * (1 + CGFloat(agitation) * 3)
+            let calm = height * 0.012 * CGFloat(min(1, fill * 8))
+            let choppy = calm * CGFloat(agitation) * 2.5
             let slope = CGFloat(tan(tilt))
+            // Fixed wave speeds: changing a speed mid-flight would make the wave jump.
             func surfaceY(_ step: CGFloat) -> CGFloat {
-                top + slope * (width * step - width / 2) + sin(phase * (1 + agitation) + Double(step) * .pi * 2.4) * wave
+                top + slope * (width * step - width / 2)
+                    + CGFloat(sin(phase + Double(step) * .pi * 2.4)) * calm
+                    + CGFloat(sin(phase * 2.6 - Double(step) * .pi * 4.2)) * choppy
             }
             var surface = Path()
             surface.move(to: CGPoint(x: 0, y: height))

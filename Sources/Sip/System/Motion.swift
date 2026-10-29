@@ -3,7 +3,11 @@ import IOKit
 import IOKit.hid
 import Observation
 
-/// The water's surface: it stays level with the world as the Mac tilts, and sloshes when it's moved.
+/// The water's surface, modeled as the first sloshing mode of liquid in a bottle.
+///
+/// Turning the bottle doesn't turn the water: the surface stays level with the world, so relative
+/// to the screen it leans by exactly the Mac's roll, with no lag. Sideways acceleration tilts the
+/// effective gravity the water feels, and the surface swings toward it as a lightly damped pendulum.
 @MainActor
 @Observable
 final class Slosh {
@@ -11,60 +15,78 @@ final class Slosh {
 
     /// Angle of the surface relative to the screen, in radians. Positive raises the left side.
     private(set) var tilt = 0.0
-    /// Extra wave height from shaking, 0 to 1.
+    /// Ripple height from shaking, 0 to 1.
     private(set) var agitation = 0.0
 
-    @ObservationIgnored private var target = 0.0
-    @ObservationIgnored private var velocity = 0.0
+    @ObservationIgnored private var roll = 0.0
+    /// How far the surface has swung from level with the world, and how fast.
+    @ObservationIgnored private var swing = 0.0
+    @ObservationIgnored private var swingSpeed = 0.0
+    /// Where effective gravity pulls the surface, relative to level, from sideways acceleration.
+    @ObservationIgnored private var push = 0.0
     @ObservationIgnored private var timer: Timer?
 
-    private static let stiffness = 55.0
-    private static let damping = 3.2
-    private static let maxTilt = 0.6
+    /// About one swing a second, which looks right for a bottle this size; water barely damps itself.
+    private static let omega = 2 * Double.pi * 1.1
+    private static let dampingRatio = 0.16
+    private static let maxTilt = 0.7
+    private static let dt = 1.0 / 60
 
-    /// The Mac's roll from level, in radians, from the accelerometer.
-    func setRoll(_ roll: Double) {
-        let next = max(-Self.maxTilt, min(Self.maxTilt, roll))
-        guard abs(next - target) > 0.004 else { return }
-        target = next
+    /// The Mac's roll from level, and the lean of effective gravity from sideways acceleration, in radians.
+    func update(roll: Double, push: Double) {
+        let roll = max(-Self.maxTilt, min(Self.maxTilt, roll))
+        guard abs(roll - self.roll) > 0.001 || abs(push - self.push) > 0.001 else { return }
+        self.roll = roll
+        self.push = push
         wake()
     }
 
-    /// A sideways jolt, in g or in screen points per second squared scaled to match.
+    /// A sudden sideways shove, as a change in swing speed (radians per second).
     func kick(_ amount: Double) {
-        guard abs(amount) > 0.01 else { return }
-        velocity += amount
-        agitation = min(1, agitation + abs(amount) * 0.08)
+        guard abs(amount) > 0.005 else { return }
+        swingSpeed += amount
+        wake()
+    }
+
+    /// Ripples without a sideways swing, like a bump from below.
+    func ripple(_ amount: Double) {
+        guard amount > 0.01 else { return }
+        agitation = min(1, agitation + amount)
         wake()
     }
 
     func splash() {
-        velocity += 1.6
+        swingSpeed += 0.9
         agitation = 1
         wake()
     }
 
     private func wake() {
         guard timer == nil else { return }
-        timer = Timer.scheduledTimer(withTimeInterval: 1 / 60, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.step(1 / 60) }
+        let timer = Timer(timeInterval: Self.dt, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.step() }
         }
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
     }
 
-    private func step(_ dt: Double) {
-        velocity += (-Self.stiffness * (tilt - target) - Self.damping * velocity) * dt
-        let next = max(-Self.maxTilt, min(Self.maxTilt, tilt + velocity * dt))
-        let calmer = agitation * pow(0.25, dt)
-        if abs(next - target) < 0.002, abs(velocity) < 0.004, calmer < 0.01 {
-            tilt = target
-            agitation = 0
-            velocity = 0
+    private func step() {
+        let dt = Self.dt
+        // Semi-implicit Euler stays stable for a lightly damped oscillator at this step size.
+        swingSpeed += (-Self.omega * Self.omega * (swing - push) - 2 * Self.dampingRatio * Self.omega * swingSpeed) * dt
+        swing = max(-0.5, min(0.5, swing + swingSpeed * dt))
+        agitation = max(min(1, abs(swingSpeed) * 0.12), agitation * pow(0.3, dt))
+
+        let next = max(-Self.maxTilt, min(Self.maxTilt, roll + swing))
+        if abs(next - tilt) > 0.0005 { tilt = next }
+        if abs(swing - push) < 0.0015, abs(swingSpeed) < 0.003, agitation < 0.01 {
+            swing = push
+            swingSpeed = 0
+            if agitation != 0 { agitation = 0 }
+            tilt = max(-Self.maxTilt, min(Self.maxTilt, roll + swing))
             timer?.invalidate()
             timer = nil
-            return
         }
-        tilt = next
-        agitation = calmer
     }
 }
 
@@ -76,7 +98,7 @@ final class MotionSensors {
     private var lidTimer: Timer?
     private var lastLid: Double?
     private var gravity = (x: 0.0, y: 0.0, z: -1.0)
-    private var lastLateral = 0.0
+    private var felt = (x: 0.0, y: 0.0, z: -1.0)
     private let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: 64)
     private var restore: [(io_object_t, String, CFTypeRef)] = []
 
@@ -120,17 +142,26 @@ final class MotionSensors {
         restore = []
     }
 
+    /// Which way the sensor's x axis points relative to the screen.
+    private static let direction = 1.0
+
     private func receive(_ sample: (Double, Double, Double)) {
-        let blend = 0.08
-        gravity = (gravity.x + (sample.0 - gravity.x) * blend,
-                   gravity.y + (sample.1 - gravity.y) * blend,
-                   gravity.z + (sample.2 - gravity.z) * blend)
-        let roll = atan2(gravity.x, (gravity.y * gravity.y + gravity.z * gravity.z).squareRoot())
-        Slosh.shared.setRoll(roll)
-        // A jolt is how far this reading is from the slowly moving gravity estimate.
-        let lateral = sample.0 - gravity.x
-        if abs(lateral - lastLateral) > 0.03 { Slosh.shared.kick((lateral - lastLateral) * 6) }
-        lastLateral = lateral
+        // At 100 readings a second: gravity settles in about 60 ms, the raw reading in about 15 ms.
+        func blend(_ value: inout (x: Double, y: Double, z: Double), _ amount: Double) {
+            value = (value.x + (sample.0 - value.x) * amount,
+                     value.y + (sample.1 - value.y) * amount,
+                     value.z + (sample.2 - value.z) * amount)
+        }
+        blend(&gravity, 0.15)
+        blend(&felt, 0.5)
+        func angle(_ v: (x: Double, y: Double, z: Double)) -> Double {
+            atan2(v.x, (v.y * v.y + v.z * v.z).squareRoot()) * Self.direction
+        }
+        let roll = angle(gravity)
+        // What the water feels is gravity plus the Mac's own acceleration; the sensor noise stays out.
+        var push = angle(felt) - roll
+        push = abs(push) < 0.01 ? 0 : push - 0.01 * (push > 0 ? 1 : -1)
+        Slosh.shared.update(roll: roll, push: max(-0.4, min(0.4, push)))
     }
 
     private func readLid() {
@@ -139,7 +170,8 @@ final class MotionSensors {
         var length = CFIndex(report.count)
         guard IOHIDDeviceGetReport(lid, kIOHIDReportTypeFeature, 1, &report, &length) == kIOReturnSuccess, length >= 3 else { return }
         let angle = Double(Int(report[2]) << 8 | Int(report[1]))
-        if let lastLid, abs(angle - lastLid) >= 2 { Slosh.shared.kick((angle - lastLid) * 0.05) }
+        // Opening or closing the lid rocks the water front to back, which shows as ripples, not a lean.
+        if let lastLid, abs(angle - lastLid) >= 1 { Slosh.shared.ripple(abs(angle - lastLid) * 0.04) }
         lastLid = angle
     }
 
