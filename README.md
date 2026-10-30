@@ -13,6 +13,10 @@
   macOS 14 Sonoma or later · Free and open source (MIT)
 </p>
 
+<p align="center">
+  <img src="docs/images/poster.jpg" width="760" alt="A bright morning Mac desktop over a sunny desk with a glass water bottle. Sip’s drop is lit in the menu bar and its panel shows bottle 1 done at 10:15 AM and bottle 2 due by 2:00 PM. In the corner of the screen, Sip’s bottle shows today’s progress, 0.75 L of 3.0 L.">
+</p>
+
 ---
 
 You know you should drink more water. You fill your bottle in the morning, and at 4 PM it’s still mostly full. Reminder apps don’t help, because a notification is easy to swipe away.
@@ -20,9 +24,9 @@ You know you should drink more water. You fill your bottle in the morning, and a
 **Sip** turns your daily water into a few bottles, each with a time to finish it. A bottle stands on your screen and fills up as you finish your real bottles, so you can see at a glance how much you’ve had today. If you haven’t finished a bottle well past its time, the screen locks for a short water break until you do.
 
 <p align="center">
-  <img src="docs/images/desk.png" width="220" alt="Hovering over the bottle on the screen, a quarter full after one of four bottles: a “Drink” button, a “Bottle 2 of 4 · finish by 2:00 PM” caption, today’s total, and a row of four small bottles">
-  &nbsp;&nbsp;
-  <img src="docs/images/desk-done.png" width="220" alt="The bottle half full after finishing two of four, with the caption “Bottle 2 done · helps keep headaches away” and two of the four small bottles filled in">
+  <img src="docs/images/drink.jpg" width="380" alt="A MacBook on a white desk beside a water bottle a quarter full. In the corner of the screen, Sip’s bottle reads “Bottle 2 of 4 · finish by 2:00 PM” and “Today: 0.75 L of 3.0 L”.">
+  &nbsp;
+  <img src="docs/images/done-desk.jpg" width="380" alt="A sunny room with a glass bottle on a wooden table. Sip’s bottle is half full and captioned “Bottle 2 done · helps keep headaches away”.">
 </p>
 
 ## Features
@@ -35,7 +39,7 @@ You know you should drink more water. You fill your bottle in the morning, and a
 - **Uneven goals still work.** If the goal doesn’t divide evenly by your bottle, the last one says how far to fill it. For example, 2.2 L from a 500 ml bottle is five bottles, with the last one filled to 200 ml.
 
 <p align="center">
-  <img src="docs/images/welcome.png" width="440" alt="The setup window with bottle sizes from 500 ml to 1000 ml, daily goals for men, women, or your own amount, wake and bed times, and the resulting plan of four bottles with their finish times">
+  <img src="docs/images/plan.jpg" width="560" alt="Sip’s welcome window over a glass of ice water by a laptop: bottle sizes from 500 ml to 1000 ml, a daily goal of 3.0 L, wake at 7:00 AM and bed at 10:00 PM, and a plan of four bottles due by 10:30 AM, 2:00 PM, 5:30 PM, and 9:00 PM.">
 </p>
 
 ### Reminders that get firmer
@@ -47,7 +51,7 @@ You know you should drink more water. You fill your bottle in the morning, and a
 - **A firmer one when it’s due.** When a bottle is due, the bar wiggles with a chime, turns orange, and says when to drink it by to keep your Mac unlocked. It wiggles again every couple of minutes until you click **Drink**.
 
 <p align="center">
-  <img src="docs/images/nudge.png" width="220" alt="The bottle tucked away into its bar, which reads “Due · drink by 2:10 PM” in orange above a row of four small bottles">
+  <img src="docs/images/nudge-desk.jpg" width="480" alt="Late afternoon sun across a wooden desk and a full, untouched glass bottle. Sip’s bottle has turned orange and reads “Due · drink by 2:10 PM”.">
 </p>
 
 ### The Dry Spell
@@ -59,7 +63,7 @@ If a bottle still isn’t empty 10 minutes after it’s due, every display goes 
 - **Your rules.** Choose a 5 to 20 minute lock and a 5 to 30 minute grace period after a bottle is due, or turn the Dry Spell off and keep just the reminders. **Settings › Try it for 20 seconds** shows you what it looks like.
 
 <p align="center">
-  <img src="docs/images/lock.png" width="640" alt="The lock screen: a nearly empty bottle, “Time to finish bottle 2”, a fact that dehydration is a common headache trigger with its source, a countdown ring, a “Bottle’s empty” button, and a hold-to-unlock bar">
+  <img src="docs/images/lock-desk.jpg" width="720" alt="The Dry Spell over a blurred desk: one glass card with a nearly empty bottle, “Time to finish bottle 2”, a fact about water and digestion with its source, a 12:20 countdown ring, a “Bottle’s empty” button, and a hint to hold the cap to unscrew it in an emergency.">
 </p>
 
 ### Why water
@@ -82,7 +86,7 @@ Click the water drop in the menu bar, or Sip’s icon in the Dock, to open a sma
 - **Everything else, one click away.** Mark the bottle empty, undo, open Why water?, replay setup, and open Settings or Quit.
 
 <p align="center">
-  <img src="docs/images/menu.png" width="360" alt="The menu bar panel with four bottle tiles, one finished and one in progress, plan tiles for bottle, goal, day, and streak, a status line, five round switches, and footer buttons">
+  <img src="docs/images/menu-desk.jpg" width="360" alt="Sip’s menu bar panel over a glass of ice water: four bottle tiles with bottle 1 done and bottle 2 due by 2:00 PM, plan tiles for bottle, goal, day, and streak, a status line, and round switches for On Screen, Reminders, Dry Spell, Calls OK, and Sounds.">
 </p>
 
 ## Install
