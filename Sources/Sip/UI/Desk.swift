@@ -149,18 +149,28 @@ struct DeskView: View {
             .animation(.spring(duration: 0.3, bounce: 0.35), value: model.deskHover)
     }
 
+    /// Blue and orange that stay readable on the caption's material, light or dark.
+    static let ink = Color(nsColor: NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            ? NSColor(red: 0.55, green: 0.8, blue: 1, alpha: 1) : NSColor(red: 0, green: 0.36, blue: 0.82, alpha: 1)
+    })
+    static let warn = Color(nsColor: NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            ? NSColor(red: 1, green: 0.7, blue: 0.35, alpha: 1) : NSColor(red: 0.8, green: 0.36, blue: 0, alpha: 1)
+    })
+
     /// Caption and today's bottles. Collapsed, only the bottles show.
     private var details: some View {
         VStack(alignment: alignment, spacing: 2) {
             if let reminder, !model.deskHover {
                 Text(reminder)
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .foregroundStyle(late ? AnyShapeStyle(Color.orange) : AnyShapeStyle(Color.accentColor))
+                    .foregroundStyle(late ? Self.warn : Self.ink)
             } else if !collapsed {
                 Text(model.deskCaption)
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .foregroundStyle(model.celebration != nil ? AnyShapeStyle(Color.accentColor)
-                                     : late ? AnyShapeStyle(Color.orange) : AnyShapeStyle(.primary))
+                    .foregroundStyle(model.celebration != nil ? AnyShapeStyle(Self.ink)
+                                     : late ? AnyShapeStyle(Self.warn) : AnyShapeStyle(.primary))
                 if model.celebration == nil, !model.deskHint.isEmpty {
                     Text(model.deskHint)
                         .font(.system(size: 10))
@@ -171,9 +181,9 @@ struct DeskView: View {
                 ForEach(model.slots) { slot in
                     let current = slot.index == model.doneCount
                     Image(systemName: slot.index < model.doneCount ? "waterbottle.fill" : "waterbottle")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(slot.index < model.doneCount ? AnyShapeStyle(Color.accentColor)
-                                         : current && late ? AnyShapeStyle(Color.orange) : AnyShapeStyle(.secondary))
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(slot.index < model.doneCount ? AnyShapeStyle(Self.ink)
+                                         : current && late ? AnyShapeStyle(Self.warn) : AnyShapeStyle(.primary.opacity(0.55)))
                 }
             }
             .padding(.top, collapsed ? 0 : 2)
@@ -193,7 +203,7 @@ struct DeskView: View {
 
     /// Where the collapsed row sits in the panel, in window coordinates, so only it wakes the bottle.
     static func collapsedRegion(bottles: Int, onLeft: Bool, withLine: Bool) -> NSRect {
-        let width = withLine ? size.width : CGFloat(bottles) * 13 + 30
+        let width = withLine ? size.width : CGFloat(bottles) * 14 + 30
         return NSRect(x: margin + (onLeft ? 0 : size.width - width), y: 0, width: width, height: withLine ? 56 : 32)
     }
 

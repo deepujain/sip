@@ -19,6 +19,13 @@ enum Snapshots {
         model.deskIntro = false
         try write(menu(model), to: folder.appending(path: "1-menu.png"))
         try write(desk(model), to: folder.appending(path: "2-desk.png"))
+        model.stage(now: midday, done: slots.count, celebration: "Goal reached · \(Fmt.liters(model.plan.goalML))")
+        for scheme in [ColorScheme.light, .dark] {
+            try write(AnyView(DeskView(model: model).padding(30).background(scheme == .dark ? Color(white: 0.12) : Color(white: 0.96))
+                .environment(\.colorScheme, scheme)), to: folder.appending(path: "2-desk-goal-\(scheme == .dark ? "dark" : "light").png"))
+        }
+        model.stage(now: midday, done: 1)
+        model.deskIntro = false
         model.deskHover = true
         try write(desk(model), to: folder.appending(path: "2-desk-hover.png"))
         model.deskHover = false
