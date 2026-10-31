@@ -219,6 +219,49 @@ private struct TimeField: View {
     }
 }
 
+/// The two digits a parent picks to end the Dry Spell.
+struct UnlockCodeField: View {
+    @AppStorage(Prefs.unlockCode) private var code = ""
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text("Unlock code").font(.system(size: 12, weight: .medium)).frame(width: 110, alignment: .leading)
+            HStack(spacing: 5) {
+                ForEach(0..<2, id: \.self) { index in
+                    let digits = Array(code)
+                    let shape = RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    Text(index < digits.count ? String(digits[index]) : "")
+                        .font(.system(size: 14, weight: .semibold, design: .rounded).monospacedDigit())
+                        .frame(width: 26, height: 28)
+                        .background(.quaternary.opacity(0.6), in: shape)
+                        .overlay(shape.strokeBorder(focused && (index == digits.count || digits.count == 2) ? Color.accentColor : .clear,
+                                                    lineWidth: 1.5))
+                }
+            }
+            .contentShape(Rectangle())
+            .focusable()
+            .focused($focused)
+            .focusEffectDisabled()
+            .onTapGesture { focused = true }
+            .onKeyPress(phases: .down) { press in
+                if press.key == .delete || press.key == .deleteForward {
+                    if !code.isEmpty { code.removeLast() }
+                    return .handled
+                }
+                guard let digit = press.characters.first, digit.isASCII, digit.isNumber else { return .ignored }
+                code = code.count >= 2 ? String(digit) : code + String(digit)
+                return .handled
+            }
+            Text(code.count == 2 ? "Typing it on the lock screen unlocks the Mac."
+                                 : "Click and type two digits, for a parent. Without a code, the lock ends when the bottle is empty or time runs out.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
 struct WelcomeView: View {
     let done: () -> Void
 
@@ -243,6 +286,13 @@ struct WelcomeView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             SetupFields()
+            VStack(alignment: .leading, spacing: 8) {
+                Text("DRY SPELL")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(0.8)
+                    .foregroundStyle(.tertiary)
+                UnlockCodeField()
+            }
             HStack {
                 Text("You can change all of this later in Settings.")
                     .font(.caption)
@@ -346,8 +396,9 @@ struct SettingsView: View {
                     .foregroundStyle(.tertiary)
                 choices(title: "Lock for", values: [5, 10, 15, 20], selection: $lockMinutes)
                 choices(title: "Grace after due", values: [5, 10, 15, 30], selection: $graceMinutes)
+                UnlockCodeField()
                 HStack {
-                    Text("Never during calls, when you're away, or in the hour before bed. In an emergency, hold the bottle’s cap until it unscrews.")
+                    Text("Never during calls, when you're away, or in the hour before bed.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)

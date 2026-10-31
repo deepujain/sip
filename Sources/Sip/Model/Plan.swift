@@ -14,6 +14,8 @@ enum Prefs {
     static let sounds = "sounds"
     static let lockMinutes = "lockMinutes"
     static let graceMinutes = "graceMinutes"
+    /// Two digits a parent picks; typing them ends the Dry Spell. Empty means no code.
+    static let unlockCode = "unlockCode"
     static let hasOnboarded = "hasOnboarded"
     static let history = "history"
     static let corner = "corner"

@@ -64,12 +64,17 @@ struct LockView: View {
                     }
                     .keyboardShortcut(.return)
                 }
-                HStack(spacing: 8) {
-                    Image(systemName: "arrow.counterclockwise")
-                    Text("Emergency? Hold the cap to unscrew it, or press Esc three times.")
+                if model.unlockCode != nil {
+                    HStack(spacing: 12) {
+                        Image(systemName: "lock.fill")
+                        Text("Or type the unlock code")
+                        CodeBoxes(entry: model.codeEntry)
+                            .modifier(Shake(misses: model.codeMisses))
+                            .animation(.linear(duration: 0.4), value: model.codeMisses)
+                    }
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.white.opacity(0.7))
                 }
-                .font(.footnote.weight(.medium))
-                .foregroundStyle(.white.opacity(0.6))
             }
             .frame(width: 470, alignment: .leading)
         }
@@ -99,6 +104,36 @@ struct LockView: View {
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+/// Two boxes that fill with a dot for each digit typed.
+private struct CodeBoxes: View {
+    let entry: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(0..<2, id: \.self) { index in
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(.white.opacity(0.12))
+                    .strokeBorder(.white.opacity(index == entry.count ? 0.8 : 0.35), lineWidth: 1.5)
+                    .overlay {
+                        if index < entry.count { Circle().fill(.white).frame(width: 9, height: 9) }
+                    }
+                    .frame(width: 32, height: 38)
+            }
+        }
+    }
+}
+
+/// A quick side-to-side shake after a wrong code.
+private struct Shake: GeometryEffect {
+    var animatableData: CGFloat
+
+    init(misses: Int) { animatableData = CGFloat(misses) }
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        ProjectionTransform(CGAffineTransform(translationX: 8 * sin(animatableData * .pi * 6), y: 0))
     }
 }
 
@@ -152,9 +187,9 @@ private struct Countdown: View {
     }
 }
 
-/// Always a way out: hold the bottle's cap and it unscrews, rising a little with each turn, until it pops
-/// off after three seconds and the screen unlocks. Let go early and it screws itself back down.
-/// That bottle won't lock the Mac again.
+/// Always a way out, even past a parent's code, though the lock screen never mentions it: hold the
+/// bottle's cap and it unscrews, rising a little with each turn, until it pops off after three seconds
+/// and the screen unlocks. Let go early and it screws itself back down. That bottle won't lock the Mac again.
 struct CapUnlock: View {
     let level: Double
     let sounds: Bool
@@ -209,7 +244,6 @@ struct CapUnlock: View {
                 .frame(width: space.size.width * 0.75, height: space.size.height * 0.2)
                 .frame(maxWidth: .infinity)
                 .offset(y: -space.size.height * 0.05)
-                .onHover { inside in (inside ? NSCursor.openHand : NSCursor.arrow).set() }
                 .onLongPressGesture(minimumDuration: Self.holdTime, maximumDistance: 60) {
                     hold = Hold(popped: true)
                     if sounds { NSSound(named: "Pop")?.play() }
@@ -217,7 +251,6 @@ struct CapUnlock: View {
                 } onPressingChanged: { pressing in
                     guard !hold.popped else { return }
                     if pressing {
-                        NSCursor.closedHand.set()
                         hold = Hold(pressed: Date())
                     } else {
                         let from = turn(at: Date())
@@ -228,7 +261,6 @@ struct CapUnlock: View {
                     }
                 }
         }
-        .help(Text("Hold the cap for an emergency unlock"))
     }
 }
 
@@ -346,8 +378,16 @@ final class LockController {
         self.pulse = pulse
         watchdog.arm(true)
         keys = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard event.keyCode == 53 else { return event }
-            MainActor.assumeIsolated { self?.escapePressed() }
+            switch event.keyCode {
+            case 53:
+                MainActor.assumeIsolated { self?.escapePressed() }
+            case 51, 117:
+                MainActor.assumeIsolated { self?.model.eraseCode() }
+            default:
+                guard let digit = event.charactersIgnoringModifiers?.first, digit.isASCII, digit.isNumber,
+                      event.modifierFlags.isDisjoint(with: [.command, .control, .option]) else { return event }
+                MainActor.assumeIsolated { self?.model.typeCode(digit) }
+            }
             return nil
         }
         NSApp.presentationOptions = [.hideDock, .hideMenuBar, .disableProcessSwitching, .disableHideApplication]

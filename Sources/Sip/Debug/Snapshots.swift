@@ -89,6 +89,15 @@ enum Snapshots {
                      to: folder.appending(path: "live-lock-unscrewing-\(Int(turn * 100)).png"))
         }
         CapUnlock.previewTurn = nil
+        let savedCode = UserDefaults.standard.string(forKey: Prefs.unlockCode)
+        UserDefaults.standard.set("42", forKey: Prefs.unlockCode)
+        model.typeCode("4")
+        try live(AnyView(LockView(model: model, primary: true).frame(width: 1024, height: 640)),
+                 to: folder.appending(path: "live-lock-code.png"))
+        try live(AnyView(SettingsView(model: model).background(Color(nsColor: .windowBackgroundColor))),
+                 to: folder.appending(path: "live-settings-code.png"))
+        model.eraseCode()
+        UserDefaults.standard.set(savedCode, forKey: Prefs.unlockCode)
         try live(AnyView(BottleView(level: 0.06, cap: .off).frame(height: 360).padding(30).background(Backdrop(photo: .afternoon))),
                  to: folder.appending(path: "live-cap-off.png"))
         LockView.backdrop = nil

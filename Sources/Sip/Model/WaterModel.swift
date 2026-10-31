@@ -20,6 +20,10 @@ final class WaterModel {
     private(set) var lockedUntil: Date?
     private(set) var lockStarted: Date?
     private(set) var previewLock = false
+    /// The digits of the unlock code typed so far on the Dry Spell.
+    private(set) var codeEntry = ""
+    /// Bumped on a wrong code, so the lock card can shake.
+    private(set) var codeMisses = 0
     private(set) var nudge: Nudge?
     private(set) var streak = 0
     /// A short reward shown on the bottle right after you finish one.
@@ -94,6 +98,28 @@ final class WaterModel {
     var graceMinutes: Int {
         _ = settingsVersion
         return max(1, defaults.integer(forKey: Prefs.graceMinutes))
+    }
+
+    var unlockCode: String? {
+        let code = defaults.string(forKey: Prefs.unlockCode) ?? ""
+        return code.count == 2 ? code : nil
+    }
+
+    func typeCode(_ digit: Character) {
+        guard isLocked, let code = unlockCode else { return }
+        codeEntry.append(digit)
+        guard codeEntry.count == code.count else { return }
+        if codeEntry == code {
+            endLock(finished: false, emergency: true)
+        } else {
+            codeEntry = ""
+            codeMisses += 1
+            play("Basso")
+        }
+    }
+
+    func eraseCode() {
+        if !codeEntry.isEmpty { codeEntry.removeLast() }
     }
 
     private func flag(_ key: String) -> Bool {
@@ -358,6 +384,7 @@ final class WaterModel {
     /// unless you used the emergency way out: then this bottle doesn't lock again.
     func endLock(finished: Bool, emergency: Bool = false) {
         let wasPreview = previewLock
+        codeEntry = ""
         lockedUntil = nil
         lockStarted = nil
         previewLock = false
