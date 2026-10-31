@@ -114,7 +114,9 @@ struct PlanPreview: View {
                     .font(.system(.subheadline, design: .rounded).weight(.semibold))
                     .foregroundStyle(.secondary)
             }
-            HStack(alignment: .bottom, spacing: 6) {
+            // Every column keeps room for the "fill to" line, so bottles and times line up across the row.
+            let partial = slots.contains { $0.amount < plan.bottleML }
+            HStack(alignment: .top, spacing: 6) {
                 ForEach(slots) { slot in
                     VStack(spacing: 4) {
                         BottleView(level: Double(slot.amount) / Double(plan.bottleML) * 0.92, animated: false)
@@ -123,12 +125,14 @@ struct PlanPreview: View {
                             .font(.system(size: 10.5, weight: .medium))
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
-                        if slot.amount < plan.bottleML {
-                            Text("fill to \(Fmt.ml(slot.amount))")
+                        if partial {
+                            Text(slot.amount < plan.bottleML ? "fill to \(Fmt.ml(slot.amount))" : " ")
                                 .font(.system(size: 9.5))
                                 .foregroundStyle(.secondary)
+                                .lineLimit(1)
                         }
                     }
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity)
                 }
             }

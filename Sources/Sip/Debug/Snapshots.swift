@@ -55,6 +55,9 @@ enum Snapshots {
         try write(menu(model), to: folder.appending(path: "6-menu-done.png"))
 
         try write(AnyView(WelcomeView {}.background(Color(nsColor: .windowBackgroundColor))), to: folder.appending(path: "7-welcome.png"))
+        let partial = Plan(bottleML: 750, goalML: 2300, wakeMinutes: 7 * 60, sleepMinutes: 22 * 60)
+        try write(AnyView(PlanPreview(plan: partial).frame(width: 512).padding(24).background(Color(nsColor: .windowBackgroundColor))),
+                  to: folder.appending(path: "7-plan-partial.png"))
         try write(AnyView(SettingsView(model: model).background(Color(nsColor: .windowBackgroundColor))), to: folder.appending(path: "8-settings.png"))
         try write(AnyView(AppIconArtwork().scaleEffect(0.25).frame(width: 256, height: 256)), to: folder.appending(path: "9-icon.png"))
 
