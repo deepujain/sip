@@ -10,6 +10,8 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/deepujain/sip/releases/latest/download/Sip.zip"><b>Download</b></a> ·
+  <a href="#install">Install steps</a> ·
   macOS 14 Sonoma or later · Free and open source (MIT)
 </p>
 
@@ -28,6 +30,18 @@ You know you should drink more water. You fill your bottle in the morning, and a
   &nbsp;
   <img src="docs/images/done-desk.jpg" width="380" alt="A sunny room with a glass bottle on a wooden table. Sip’s bottle is half full and captioned “Bottle 2 done · helps keep headaches away”.">
 </p>
+
+## Install
+
+1. Download **[Sip.zip](https://github.com/deepujain/sip/releases/latest/download/Sip.zip)** (macOS 14 or later, Apple silicon and Intel).
+2. Open the zip and drag **Sip.app** into your **Applications** folder.
+3. Open it. The first time, macOS blocks it with “Apple cannot check it for malicious software,” because the app isn’t notarized by Apple yet. Click **OK**, then open **System Settings › Privacy & Security**, scroll down to **Security**, click **Open Anyway** next to Sip, and enter your password. You only need to do this once.
+
+   Prefer Terminal? This does the same thing: `xattr -dr com.apple.quarantine /Applications/Sip.app`
+
+Setup opens first. Pick your bottle, your goal, and your day, then click **Start**. The bottle appears on the right side of the screen, a water drop appears in the menu bar, and Sip’s icon appears in the Dock. If you don’t see the drop, your menu bar is full and macOS has hidden it behind the camera notch: click the Dock icon instead, or hold **⌘** and drag other menu bar icons to make room. Sip needs no permissions.
+
+Sip isn’t medical advice. If you have kidney or heart problems, or take water pills, ask your doctor how much to drink.
 
 ## Features
 
@@ -88,18 +102,6 @@ Click the water drop in the menu bar, or Sip’s icon in the Dock, to open a sma
 <p align="center">
   <img src="docs/images/menu-desk.jpg" width="360" alt="Sip’s menu bar panel over a glass of ice water: four bottle tiles with bottle 1 done and bottle 2 due by 2:00 PM, plan tiles for bottle, goal, day, and streak, a status line, and round switches for On Screen, Reminders, Dry Spell, Calls OK, and Sounds.">
 </p>
-
-## Install
-
-1. Download **[Sip.zip](https://github.com/deepujain/sip/releases/latest/download/Sip.zip)** (macOS 14 or later, Apple silicon and Intel).
-2. Open the zip and drag **Sip.app** into your **Applications** folder.
-3. Open it. The first time, macOS blocks it with “Apple cannot check it for malicious software,” because the app isn’t notarized by Apple yet. Click **OK**, then open **System Settings › Privacy & Security**, scroll down to **Security**, click **Open Anyway** next to Sip, and enter your password. You only need to do this once.
-
-   Prefer Terminal? This does the same thing: `xattr -dr com.apple.quarantine /Applications/Sip.app`
-
-Setup opens first. Pick your bottle, your goal, and your day, then click **Start**. The bottle appears on the right side of the screen, a water drop appears in the menu bar, and Sip’s icon appears in the Dock. If you don’t see the drop, your menu bar is full and macOS has hidden it behind the camera notch: click the Dock icon instead, or hold **⌘** and drag other menu bar icons to make room. Sip needs no permissions.
-
-Sip isn’t medical advice. If you have kidney or heart problems, or take water pills, ask your doctor how much to drink.
 
 ## Build from source
 
