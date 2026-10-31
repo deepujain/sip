@@ -79,7 +79,6 @@ struct BottleView: View, Animatable {
         set { level = newValue }
     }
     var animated = true
-    var warning = false
     /// Follow the Mac's tilt and movement.
     var sloshes = false
     /// How far the cap has been unscrewed, 0 to 1; its ribs slide by as it turns.
@@ -128,13 +127,13 @@ struct BottleView: View, Animatable {
     private func canvas(phase: Double, tilt: Double, agitation: Double) -> some View {
         Canvas { context, size in
             if cap != .alone {
-                Self.draw(in: &context, size: size, level: level, phase: phase, warning: warning, tilt: tilt, agitation: agitation)
+                Self.draw(in: &context, size: size, level: level, phase: phase, tilt: tilt, agitation: agitation)
             }
             if cap != .off { Self.drawCap(in: &context, size: size, turn: capTurn) }
         }
     }
 
-    private static func draw(in context: inout GraphicsContext, size: CGSize, level: Double, phase: Double, warning: Bool,
+    private static func draw(in context: inout GraphicsContext, size: CGSize, level: Double, phase: Double,
                              tilt: Double, agitation: Double) {
         let rect = CGRect(origin: .zero, size: size)
         let width = size.width, height = size.height
@@ -183,7 +182,7 @@ struct BottleView: View, Animatable {
             surface.addLine(to: CGPoint(x: center.x - tangent.x * span + down.x * span * 2, y: center.y - tangent.y * span + down.y * span * 2))
             surface.closeSubpath()
             // Water is nearly clear too: a light tint, deeper toward the sides where you look through more of it.
-            let tint = warning ? Color(red: 1, green: 0.6, blue: 0.25) : Color(red: 0.25, green: 0.62, blue: 1)
+            let tint = Color(red: 0.25, green: 0.62, blue: 1)
             let deep = CGPoint(x: center.x + down.x * height * 0.8, y: center.y + down.y * height * 0.8)
             water.fill(surface, with: .linearGradient(Gradient(colors: [tint.opacity(0.28), tint.opacity(0.5)]), startPoint: center, endPoint: deep))
             water.fill(surface, with: across([

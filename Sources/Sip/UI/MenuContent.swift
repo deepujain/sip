@@ -212,7 +212,7 @@ private struct BottleTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(alignment: .top) {
-                BottleView(level: model.level(of: slot), animated: isCurrent, warning: late)
+                BottleView(level: model.level(of: slot), animated: isCurrent)
                     .frame(height: 38)
                     .opacity(isDone || isCurrent ? 1 : 0.55)
                 Spacer(minLength: 0)

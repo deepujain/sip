@@ -117,7 +117,7 @@ struct DeskView: View {
 
     private var bottle: some View {
             ZStack(alignment: .bottom) {
-                BottleView(level: model.deskLevel, warning: late, sloshes: true)
+                BottleView(level: model.deskLevel, sloshes: true)
                     .animation(.spring(duration: 0.9, bounce: 0.25), value: model.deskLevel)
                     .frame(height: 124)
                     .shadow(color: .black.opacity(0.12), radius: 3, y: 2)

@@ -65,7 +65,7 @@ Sip isn’t medical advice. If you have kidney or heart problems, or take water 
 - **A firmer one when it’s due.** When a bottle is due, the bar wiggles with a chime, turns orange, and says when to drink it by to keep your Mac unlocked. It wiggles again every couple of minutes until you click **Drink**.
 
 <p align="center">
-  <img src="docs/images/nudge-desk.jpg" width="480" alt="Late afternoon sun across a wooden desk and a full, untouched glass bottle. Sip’s bottle has turned orange and reads “Due · drink by 2:10 PM”.">
+  <img src="docs/images/nudge-desk.jpg" width="480" alt="Late afternoon sun across a wooden desk and a full, untouched glass bottle. Sip’s bottle bar has turned orange and reads “Due · drink by 2:10 PM”.">
 </p>
 
 ### The Dry Spell

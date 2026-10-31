@@ -89,7 +89,7 @@ enum Snapshots {
                      to: folder.appending(path: "live-lock-unscrewing-\(Int(turn * 100)).png"))
         }
         CapUnlock.previewTurn = nil
-        try live(AnyView(BottleView(level: 0.06, warning: true, cap: .off).frame(height: 360).padding(30).background(Backdrop(photo: .afternoon))),
+        try live(AnyView(BottleView(level: 0.06, cap: .off).frame(height: 360).padding(30).background(Backdrop(photo: .afternoon))),
                  to: folder.appending(path: "live-cap-off.png"))
         LockView.backdrop = nil
     }

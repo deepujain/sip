@@ -187,7 +187,7 @@ struct CapUnlock: View {
         TimelineView(.animation(paused: hold.pressed == nil && hold.released == nil)) { context in
             let turn = turn(at: context.date)
             ZStack {
-                BottleView(level: level, warning: true, cap: .off)
+                BottleView(level: level, cap: .off)
                 BottleView(level: level, animated: false, capTurn: turn, cap: .alone)
                     // It climbs the thread for the whole hold, staying seated on the glass, and comes free right at the end.
                     .visualEffect { content, proxy in
