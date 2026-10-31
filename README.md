@@ -93,7 +93,9 @@ Click the water drop in the menu bar, or Sip’s icon in the Dock, to open a sma
 
 1. Download **[Sip.zip](https://github.com/deepujain/sip/releases/latest/download/Sip.zip)** (macOS 14 or later, Apple silicon and Intel).
 2. Open the zip and drag **Sip.app** into your **Applications** folder.
-3. Open it. The app isn’t notarized by Apple yet, so the first time macOS says it can’t verify the developer. Open **System Settings › Privacy & Security**, scroll down, and click **Open Anyway**. You only need to do this once.
+3. Open it. The first time, macOS blocks it with “Apple cannot check it for malicious software,” because the app isn’t notarized by Apple yet. Click **OK**, then open **System Settings › Privacy & Security**, scroll down to **Security**, click **Open Anyway** next to Sip, and enter your password. You only need to do this once.
+
+   Prefer Terminal? This does the same thing: `xattr -dr com.apple.quarantine /Applications/Sip.app`
 
 Setup opens first. Pick your bottle, your goal, and your day, then click **Start**. The bottle appears on the right side of the screen, a water drop appears in the menu bar, and Sip’s icon appears in the Dock. If you don’t see the drop, your menu bar is full and macOS has hidden it behind the camera notch: click the Dock icon instead, or hold **⌘** and drag other menu bar icons to make room. Sip needs no permissions.
 
