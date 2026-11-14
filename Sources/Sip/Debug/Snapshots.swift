@@ -50,6 +50,9 @@ enum Snapshots {
         model.stage(now: slots[2].start.addingTimeInterval(60), done: 2,
                     celebration: "Bottle 2 done · \(Benefit.pick(at: slots[2].start, bottle: 1).short)")
         try write(desk(model), to: folder.appending(path: "2-desk-done.png"))
+        model.stage(now: slots[1].end.addingTimeInterval(-870), done: 2,
+                    celebration: "Bottle 2 done · \(Benefit.pick(at: slots[2].start, bottle: 1).short)")
+        try write(desk(model), to: folder.appending(path: "2-desk-undo.png"))
 
         model.stage(now: slots[3].end.addingTimeInterval(600), done: 4, streak: 7)
         try write(menu(model), to: folder.appending(path: "6-menu-done.png"))

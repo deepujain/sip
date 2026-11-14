@@ -359,11 +359,20 @@ final class WaterModel {
         now = at
     }
 
+    /// A Drink clicked by mistake can be taken back on the bottle itself for a couple of minutes.
+    var canUndoOnDesk: Bool {
+        guard let last = finishes.last else { return false }
+        return now.timeIntervalSince(last) < 120
+    }
+
     func undoLast() {
         guard !finishes.isEmpty else { return }
         finishes.removeLast()
         save()
+        celebration = nil
+        celebrationExpires = nil
         streak = computeStreak()
+        now = Date()
     }
 
     func dismissNudge() {

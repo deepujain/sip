@@ -127,7 +127,23 @@ struct DeskView: View {
                     .contentShape(Rectangle())
                     .gesture(drag)
                     .help(Text("Drag to move the bottle"))
-                if model.deskHover, model.current != nil {
+                if model.canUndoOnDesk, model.deskHover || model.celebration != nil {
+                    Button {
+                        model.undoLast()
+                    } label: {
+                        Label("Undo", systemImage: "arrow.uturn.backward")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .foregroundStyle(.primary)
+                            .background(.regularMaterial, in: Capsule())
+                            .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.bottom, 14)
+                    .transition(.scale(scale: 0.8).combined(with: .opacity))
+                    .help(Text("I didn’t drink it. Put the bottle back."))
+                } else if model.deskHover, model.current != nil {
                     Button {
                         model.finishBottle()
                     } label: {
