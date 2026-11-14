@@ -207,6 +207,7 @@ private struct BottleTile: View {
 
     private var isCurrent: Bool { slot.index == model.doneCount }
     private var isDone: Bool { slot.index < model.doneCount }
+    private var isLastDone: Bool { isDone && slot.index == model.doneCount - 1 }
     private var late: Bool { isCurrent && (model.phase == .due || model.phase == .overdue) }
 
     var body: some View {
@@ -216,10 +217,24 @@ private struct BottleTile: View {
                     .frame(height: 38)
                     .opacity(isDone || isCurrent ? 1 : 0.55)
                 Spacer(minLength: 0)
-                Image(systemName: isDone ? "checkmark.circle.fill" : "circle.fill")
-                    .font(.system(size: isDone ? 11 : 7))
-                    .foregroundStyle(isDone ? AnyShapeStyle(Color.green) : late ? AnyShapeStyle(Color.orange)
-                                     : isCurrent ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary))
+                if isLastDone {
+                    Button { model.undoLast() } label: {
+                        Image(systemName: "arrow.uturn.backward")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Color.accentColor)
+                            .frame(width: 22, height: 22)
+                            .background(Color.accentColor.opacity(0.14), in: Circle())
+                            .contentShape(Circle())
+                            .accessibilityLabel(Text("Undo"))
+                    }
+                    .buttonStyle(PressableStyle())
+                    .help(Text("I didn’t finish this bottle"))
+                } else {
+                    Image(systemName: isDone ? "checkmark.circle.fill" : "circle.fill")
+                        .font(.system(size: isDone ? 11 : 7))
+                        .foregroundStyle(isDone ? AnyShapeStyle(Color.green) : late ? AnyShapeStyle(Color.orange)
+                                         : isCurrent ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary))
+                }
             }
             VStack(alignment: .leading, spacing: 1) {
                 Text("Bottle \(slot.number)")
@@ -243,7 +258,7 @@ private struct BottleTile: View {
         .help(Text(help))
         .contextMenu {
             if isCurrent { Button("Bottle’s Empty") { model.finishBottle() } }
-            if isDone, slot.index == model.doneCount - 1 { Button("Undo") { model.undoLast() } }
+            if isLastDone { Button("Undo") { model.undoLast() } }
         }
     }
 

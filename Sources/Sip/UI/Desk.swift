@@ -234,7 +234,9 @@ final class DeskController {
     private var dragStart: (mouse: CGPoint, origin: CGPoint)?
     private var lastDrag: (point: CGPoint, time: TimeInterval, velocity: Double)?
     private var collapseTimer: Timer?
-    private static let collapseAfter: TimeInterval = 5
+    /// How long the details stay after the pointer leaves; right after launch they stay a little longer.
+    private static let collapseAfter: TimeInterval = 2
+    private static let introLength: TimeInterval = 5
     private var tiltTimer: Timer?
     private var lastLean = 0.0
 
@@ -270,7 +272,8 @@ final class DeskController {
 
     private func scheduleCollapse() {
         collapseTimer?.invalidate()
-        collapseTimer = Timer.scheduledTimer(withTimeInterval: Self.collapseAfter, repeats: false) { [weak self] _ in
+        let delay = model.deskIntro ? Self.introLength : Self.collapseAfter
+        collapseTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self else { return }
                 // Wait out a finished bottle's message, or a drag in progress.
